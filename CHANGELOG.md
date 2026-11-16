@@ -3,6 +3,11 @@
 All notable changes to Salaty Reminder are listed here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.3] - 2026-11-16
+
+### Changed
+- Asr shows "No confirmed sunnah" instead of 4 rak'ahs before, since those are not among the confirmed rawatib.
+
 ## [1.0.2] - 2026-11-16
 
 ### Fixed
@@ -34,6 +39,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Automatic updates from GitHub Releases with SHA-256 verification.
 - Windows 10 support: the task-button strip is shrunk to make room for the widget.
 
+[1.0.3]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.0.3
 [1.0.2]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.0.2
 [1.0.1]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.0.1
 [1.0.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.0.0
