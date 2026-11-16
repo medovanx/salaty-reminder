@@ -35,7 +35,6 @@ sealed class SalatyApp : ApplicationContext
 
     readonly HostWindow host;
     readonly TaskbarWidget widget = new();
-    readonly NotifyIcon tray;
     readonly ContextMenuStrip menu = new();
     readonly System.Windows.Forms.Timer timer = new() { Interval = 1000 };
     readonly HashSet<string> fired = [];
@@ -61,16 +60,11 @@ sealed class SalatyApp : ApplicationContext
         host = new HostWindow(this);
         menu.Opening += (_, e) => { BuildMenu(); e.Cancel = false; };
 
-        tray = new NotifyIcon
-        {
-            Icon = new Icon(AppIcon, SystemInformation.SmallIconSize),
-            Text = L.T("AppName"),
-            ContextMenuStrip = menu,
-            Visible = !Headless,
-        };
         if (Headless) { Recompute(); return; }
-        tray.MouseClick += (_, e) => { if (e.Button == MouseButtons.Left) ToggleCard(); };
-        tray.BalloonTipClicked += (_, _) => { StopAlert(); ShowCard(); };
+        // No tray icon: the widget is the app's face, and notifications are real Windows toasts.
+        Toast.Init(AppIcon, a => host.BeginInvoke(a));
+        if (Environment.GetCommandLineArgs().Contains("--test-toast"))
+            Toast.Show(L.F("NotifTitle", L.PrayerName(Prayer.Fajr, DateTime.Now)), $"4:40 AM, {S.LocationName}", ShowCard);
 
         widget.Clicked += () => { StopAlert(); ToggleCard(); };
         widget.RightClicked += () =>
@@ -101,7 +95,7 @@ sealed class SalatyApp : ApplicationContext
 
         Updater.CleanupOld();
         if (Environment.GetCommandLineArgs().Contains("--updated"))
-            tray.ShowBalloonTip(6000, L.T("AppName"), L.F("Updated", Updater.CurrentText), ToolTipIcon.Info);
+            Toast.Show(L.T("AppName"), L.F("Updated", Updater.CurrentText));
         updateTimer.Tick += async (_, _) => { updateTimer.Interval = 6 * 3600 * 1000; await CheckForUpdatesAsync(false); };
         updateTimer.Start(); // first check 45 s after start, then every 6 hours
 
@@ -173,10 +167,7 @@ sealed class SalatyApp : ApplicationContext
             var (p, at) = GetNext(now);
             widget.SetContent($"{L.PrayerName(p, at)} {L.Time(at, S.Use24h)}", L.Countdown(at - now), false, L.Ar);
         }
-        tray.Text = Truncate($"{L.T("AppName")}: {L.PrayerName(GetNext(now).prayer, now)} {L.Time(GetNext(now).at, S.Use24h)}", 127);
     }
-
-    static string Truncate(string s, int n) => s.Length <= n ? s : s[..n];
 
     void CheckReminders(DateTime now)
     {
@@ -188,13 +179,13 @@ sealed class SalatyApp : ApplicationContext
             {
                 var e = t.AddMinutes(-S.EarlyMinutes);
                 if (now >= e && now < e.AddMinutes(3) && fired.Add(Key("E", p)))
-                    tray.ShowBalloonTip(10000, L.F("EarlyTitle", name, S.EarlyMinutes),
-                        $"{L.Time(t, S.Use24h)}, {S.LocationName}", ToolTipIcon.None);
+                    Toast.Show(L.F("EarlyTitle", name, S.EarlyMinutes), $"{L.Time(t, S.Use24h)}, {S.LocationName}", ShowCard);
             }
             if (now >= t && now < t.AddMinutes(3) && fired.Add(Key("A", p)))
             {
                 if (S.NotifyAtTime)
-                    tray.ShowBalloonTip(15000, L.F("NotifTitle", name), $"{L.Time(t, S.Use24h)}, {S.LocationName}", ToolTipIcon.None);
+                    Toast.Show(L.F("NotifTitle", name), $"{L.Time(t, S.Use24h)}, {S.LocationName}",
+                        () => { StopAlert(); ShowCard(); }, silent: S.PlayAdhan);
                 if (S.FlashWidget) { flashPrayer = p; flashUntil = now.AddMinutes(10); }
                 if (S.PlayAdhan) PlayAdhan(S.AdhanFile);
             }
@@ -279,7 +270,7 @@ sealed class SalatyApp : ApplicationContext
         if (r == null)
         {
             if (userInitiated)
-                tray.ShowBalloonTip(8000, L.T("AppName"), L.F("LocFailed", S.LocationName), ToolTipIcon.Warning);
+                Toast.Show(L.T("AppName"), L.F("LocFailed", S.LocationName));
             return;
         }
         if (!S.AutoLocation && !userInitiated) return;
@@ -318,7 +309,7 @@ sealed class SalatyApp : ApplicationContext
             _ = InstallUpdateAsync(rel);
             return L.F("Updating", ver);
         }
-        tray.ShowBalloonTip(10000, L.T("AppName"), L.F("UpdateAvailable", ver), ToolTipIcon.Info);
+        Toast.Show(L.T("AppName"), L.F("UpdateAvailable", ver), () => _ = InstallUpdateAsync(rel));
         return L.F("UpdateAvailable", ver);
     }
 
@@ -334,14 +325,14 @@ sealed class SalatyApp : ApplicationContext
     {
         if (installing) return;
         installing = true;
-        tray.ShowBalloonTip(4000, L.T("AppName"), L.F("Updating", rel.Version.ToString(3)), ToolTipIcon.Info);
+        Toast.Show(L.T("AppName"), L.F("Updating", rel.Version.ToString(3)));
         if (await Updater.InstallAsync(rel))
         {
             Exit();
             return;
         }
         installing = false;
-        tray.ShowBalloonTip(8000, L.T("AppName"), L.T("UpdateFailed"), ToolTipIcon.Warning);
+        Toast.Show(L.T("AppName"), L.T("UpdateFailed"));
         Updater.OpenPage(rel.PageUrl);
     }
 
@@ -357,7 +348,7 @@ sealed class SalatyApp : ApplicationContext
         menu.Items.Add(L.T("CheckForUpdates"), null, async (_, _) =>
         {
             var msg = await CheckForUpdatesAsync(userInitiated: true);
-            if (!installing) tray.ShowBalloonTip(6000, L.T("AppName"), msg, ToolTipIcon.Info);
+            if (!installing) Toast.Show(L.T("AppName"), msg);
         });
         var startup = new ToolStripMenuItem(L.T("StartWithWindows")) { Checked = AppSettings.StartWithWindows };
         startup.Click += (_, _) => { try { AppSettings.StartWithWindows = !startup.Checked; } catch { } };
@@ -380,8 +371,6 @@ sealed class SalatyApp : ApplicationContext
     {
         timer.Stop();
         StopAdhan();
-        tray.Visible = false;
-        tray.Dispose();
         if (widget.Handle != IntPtr.Zero) widget.DestroyHandle();
         ExitThread();
     }

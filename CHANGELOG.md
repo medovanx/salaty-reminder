@@ -3,6 +3,11 @@
 All notable changes to Salaty Reminder are listed here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.3.0] - 2026-11-16
+
+### Changed
+- No more icon in the notification area. Notifications are now Windows toasts that stay in the notification centre; clicking one opens the prayer card, and clicking an update toast installs the update.
+
 ## [1.2.1] - 2026-11-16
 
 ### Fixed
@@ -72,6 +77,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Automatic updates from GitHub Releases with SHA-256 verification.
 - Windows 10 support: the task-button strip is shrunk to make room for the widget.
 
+[1.3.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.3.0
 [1.2.1]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.2.1
 [1.2.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.2.0
 [1.1.1]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.1.1

@@ -95,7 +95,7 @@ The exe is self-contained, so you don't need to install .NET. Windows SmartScree
 | Reminders | Notification at prayer time, early reminder and its minutes, flash the widget, play the adhan and pick its file |
 | Updates | Check automatically, install automatically, check now |
 
-Settings are stored in `%APPDATA%\SalatyReminder\settings.json`.
+Settings are stored in `%APPDATA%\SalatyReminder\settings.json`. There is no tray icon: notifications are Windows toasts, and the app registers its name and icon for them under `HKCU\Software\Classes\AppUserModelId\medovanx.SalatyReminder`.
 
 ## Privacy
 
@@ -169,6 +169,7 @@ Developer switches:
 | `--selftest out.txt LAT LON yyyy-MM-dd [method] [hanafi] [timezone]` | Write computed times to a file |
 | `--shots DIR` | Render the card, calendar, settings and widget to PNGs (uses Cairo, not your location) |
 | `--render-icon DIR` | Regenerate `app.ico` and a 512 px PNG |
+| `--test-toast` | Start normally and show a sample prayer notification |
 
 ## Releasing
 
