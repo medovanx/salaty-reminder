@@ -21,9 +21,9 @@ static class Shots
 
             var card = new PrayerCard(app);
             card.ShowNear(new Rectangle(Screen.PrimaryScreen!.WorkingArea.Right - 300, Screen.PrimaryScreen.WorkingArea.Bottom, 100, 40));
-            Save(card, Path.Combine(dir, $"card-{lang}.png"));
+            SaveOffscreen(card, Path.Combine(dir, $"card-{lang}.png"));
             card.OpenCalendarForShot();
-            Save(card, Path.Combine(dir, $"calendar-{lang}.png"));
+            SaveOffscreen(card, Path.Combine(dir, $"calendar-{lang}.png"));
             card.Close();
 
             var settings = new SettingsForm(app);
@@ -57,6 +57,19 @@ static class Shots
             g.DrawImage(widget, (int)(20 * s), 0);
         }
         strip.Save(path, System.Drawing.Imaging.ImageFormat.Png);
+    }
+
+    /// <summary>
+    /// The card hides itself when it loses focus, so a screen capture could catch whatever is behind it.
+    /// It has no text boxes, so the off-screen renderer is exact for it.
+    /// </summary>
+    static void SaveOffscreen(Form f, string path)
+    {
+        f.Refresh();
+        Application.DoEvents();
+        using var bmp = new Bitmap(f.Width, f.Height);
+        f.DrawToBitmap(bmp, new Rectangle(Point.Empty, f.Size));
+        bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
     }
 
     /// <summary>Captures the window as it really looks on screen (DrawToBitmap misrenders child text boxes).</summary>
