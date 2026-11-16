@@ -303,6 +303,6 @@ sealed class PrayerCard : Form
             y += rh;
         }
 
-        Draw(g, L.MethodName(Methods.Get(st.Method)) + (st.HanafiAsr ? ", " + L.T("AsrHanafi") : ""), fTiny, faint, Box(18, y + 6, W - 36, 20));
+        Draw(g, L.MethodName(Methods.Get(st.Method)) + (st.HanafiAsr ? ", " + L.T("AsrHanafi") : ""), fTiny, faint, Box(18, y + 6, W - 36, 20), center: true);
     }
 }
