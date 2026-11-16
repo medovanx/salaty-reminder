@@ -13,6 +13,7 @@ public static class Updater
 {
     public const string Repo = "medovanx/salaty-reminder";
     public const string AssetName = "SalatyReminder.exe";
+    public static string RepoPage => $"https://github.com/{Repo}";
     public static string ReleasesPage => $"https://github.com/{Repo}/releases";
 
     public sealed record Release(Version Version, string Tag, string PageUrl, string AssetUrl, string? Sha256);

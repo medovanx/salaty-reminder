@@ -35,6 +35,7 @@ public static class L
         ["AutoCheck"] = ("Check for updates automatically", "التحقق من التحديثات تلقائيًا"),
         ["AutoInstall"] = ("Install updates automatically", "تثبيت التحديثات تلقائيًا"),
         ["CheckNow"] = ("Check now", "تحقق الآن"),
+        ["SourceCode"] = ("Source code and releases", "الكود المصدري والإصدارات"),
         ["CheckForUpdates"] = ("Check for updates", "التحقق من التحديثات"),
         ["Version"] = ("Version {0}", "الإصدار {0}"),
         ["UpToDate"] = ("You're on the latest version ({0}).", "لديك أحدث إصدار ({0})."),

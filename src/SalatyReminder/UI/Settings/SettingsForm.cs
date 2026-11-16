@@ -235,10 +235,13 @@ sealed class SettingsForm : Form
         tglAutoInstall.Checked = s.AutoInstallUpdates;
         btnCheck.Text = L.T("CheckNow");
         var version = new Label { Text = L.F("Version", Updater.CurrentText), AutoSize = true, Font = new Font("Segoe UI Semibold", 11f), Margin = new Padding(0, 0, 0, 8) };
+        var repo = new LinkLabel { Text = "github.com/" + Updater.Repo, AutoSize = true, Margin = new Padding(0), RightToLeft = RightToLeft.No };
+        repo.LinkClicked += (_, _) => Updater.OpenPage(Updater.RepoPage);
         AddPage("\uE895", L.T("Updates"), Card(L.T("Updates"), "\uE895",
             version,
             Row(L.T("AutoCheck"), tglAutoCheck),
             Row(L.T("AutoInstall"), tglAutoInstall),
+            Row(L.T("SourceCode"), repo),
             Flow(btnCheck, lblUpdate)));
         tglAutoCheck.CheckedChanged += (_, _) => SyncEnabled();
         btnCheck.Click += async (_, _) =>

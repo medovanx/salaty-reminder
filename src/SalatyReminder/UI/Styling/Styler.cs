@@ -24,6 +24,9 @@ static class Styler
                     b.FlatAppearance.MouseOverBackColor = t.Dark ? Color.FromArgb(64, 68, 68) : Color.FromArgb(236, 240, 239);
                     b.Cursor = Cursors.Hand;
                     break;
+                case LinkLabel ll:
+                    ll.LinkColor = ll.ActiveLinkColor = ll.VisitedLinkColor = t.Accent;
+                    ll.LinkBehavior = LinkBehavior.HoverUnderline; ll.BackColor = Color.Transparent; break;
                 case Label l:
                     l.ForeColor = l.Tag as string == "dim" ? t.Dim : t.Text; l.BackColor = Color.Transparent; break;
                 case ToggleSwitch ts: ts.Theme = t; break;
