@@ -15,18 +15,21 @@ jobs:
 
       - uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: '10.0.x'
+          global-json-file: global.json
 
-      - name: Check the tag matches the project version
+      - name: Check the tag matches the version
         shell: pwsh
         run: |
           $tag = '${{ github.ref_name }}'.TrimStart('v')
-          $ver = ([xml](Get-Content SalatyReminder.csproj)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
-          if ($tag -ne $ver) { throw "Tag v$tag does not match <Version>$ver</Version> in SalatyReminder.csproj" }
+          $ver = ([xml](Get-Content Directory.Build.props)).Project.PropertyGroup.Version | Where-Object { $_ } | Select-Object -First 1
+          if ($tag -ne $ver) { throw "Tag v$tag does not match <Version>$ver</Version> in Directory.Build.props" }
+
+      - name: Test
+        run: dotnet test SalatyReminder.slnx -c Release
 
       - name: Publish single-file exe
         run: >
-          dotnet publish -c Release -r win-x64 --self-contained
+          dotnet publish src/SalatyReminder/SalatyReminder.csproj -c Release -r win-x64 --self-contained
           -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true
           -p:EnableCompressionInSingleFile=true -p:DebugType=None -o publish
 

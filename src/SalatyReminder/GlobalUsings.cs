@@ -1,0 +1,11 @@
+global using SalatyReminder.Configuration;
+global using SalatyReminder.Core.Prayers;
+global using SalatyReminder.DevTools;
+global using SalatyReminder.Interop;
+global using SalatyReminder.Localization;
+global using SalatyReminder.Services;
+global using SalatyReminder.UI.Card;
+global using SalatyReminder.UI.Controls;
+global using SalatyReminder.UI.Settings;
+global using SalatyReminder.UI.Styling;
+global using SalatyReminder.UI.Taskbar;

@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SalatyReminder.Core/SalatyReminder.Core.csproj" />
+    <Project Path="src/SalatyReminder/SalatyReminder.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SalatyReminder.Core.Tests/SalatyReminder.Core.Tests.csproj" />
+  </Folder>
+</Solution>

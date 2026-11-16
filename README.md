@@ -10,6 +10,7 @@ A small, native widget that sits next to the clock, counts down to the next pray
 reminds you before it, plays the adhan, and speaks both English and Arabic.
 
 [![Release](https://img.shields.io/github/v/release/medovanx/salaty-reminder?style=flat-square&color=0f8a6c)](https://github.com/medovanx/salaty-reminder/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/medovanx/salaty-reminder/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/medovanx/salaty-reminder/actions/workflows/ci.yml)
 [![Downloads](https://img.shields.io/github/downloads/medovanx/salaty-reminder/total?style=flat-square&color=0f8a6c)](https://github.com/medovanx/salaty-reminder/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-0f8a6c?style=flat-square)](LICENSE)
 ![Windows 10 | 11](https://img.shields.io/badge/Windows-10%20%7C%2011-0f8a6c?style=flat-square&logo=windows)
@@ -106,9 +107,37 @@ Choose a city manually and turn off update checks for a fully offline app. Praye
 
 ## How it works
 
-- **The widget** is a per-pixel-alpha child window inside `Shell_TrayWnd`, the same technique TrafficMonitor uses. It places itself left of the notification area and of any other app's window there, and recreates itself when Explorer restarts (`TaskbarCreated`). On Windows 10 it shrinks the task-button strip to make room.
+- **The widget** is a per-pixel-alpha child window inside `Shell_TrayWnd`, the same technique TrafficMonitor uses. It places itself left of the notification area and of any other app's window there, and recreates itself when Explorer restarts (`TaskbarCreated`). When Windows reports the tray area wrongly after boot, it finds the real edge through UI Automation. On Windows 10 it shrinks the task-button strip to make room.
 - **Prayer times** use the well-known [PrayTimes.org](http://praytimes.org/) astronomical algorithm, computed in UTC and converted with your time zone's rules for each date. Results match [Aladhan](https://aladhan.com/) to the minute for Cairo in winter and across Egypt's daylight saving change.
 - **Updates** come from GitHub Releases tagged `vMAJOR.MINOR.PATCH`. The new exe is downloaded next to the running one and checked against the SHA-256 digest GitHub publishes. The running exe is then renamed to `.old`, the new one takes its place and restarts.
+
+## Project structure
+
+```text
+salaty-reminder/
+├── src/
+│   ├── SalatyReminder.Core/        Prayer-time maths, no Windows or UI dependencies
+│   │   └── Prayers/                PrayerCalc, calculation methods, day times
+│   └── SalatyReminder/             The Windows app
+│       ├── Assets/                 Icon and built-in adhan
+│       ├── Configuration/          Settings and start-with-Windows
+│       ├── DevTools/               --selftest, --shots and --render-icon
+│       ├── Interop/                Win32 and DWM calls
+│       ├── Localization/           English and Arabic text and formatting
+│       ├── Services/               Location, updater, error log
+│       └── UI/
+│           ├── Card/               The prayer-times popup
+│           ├── Controls/           Themed toggle, dropdown, number box, calendar...
+│           ├── Settings/           The settings window
+│           ├── Styling/            Theme colours and drawing helpers
+│           └── Taskbar/            The widget inside the taskbar
+├── tests/
+│   └── SalatyReminder.Core.Tests/  xUnit tests against Aladhan reference times
+├── docs/                           README images
+├── Directory.Build.props           Version and settings shared by every project
+├── global.json                     Pinned .NET SDK
+└── SalatyReminder.slnx
+```
 
 ## Build from source
 
@@ -117,13 +146,15 @@ Requirements: Windows 10 or 11 and the [.NET 10 SDK](https://dotnet.microsoft.co
 ```bash
 git clone https://github.com/medovanx/salaty-reminder.git
 cd salaty-reminder
-dotnet run -c Release
+dotnet build
+dotnet test
+dotnet run --project src/SalatyReminder -c Release
 ```
 
 Build the single-file release exe:
 
 ```bash
-dotnet publish -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o publish
+dotnet publish src/SalatyReminder/SalatyReminder.csproj -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -o publish
 ```
 
 Developer switches:
@@ -136,14 +167,14 @@ Developer switches:
 
 ## Releasing
 
-Versions follow [Semantic Versioning](https://semver.org/). Bump `<Version>` in `SalatyReminder.csproj`, add the changes to [CHANGELOG.md](CHANGELOG.md), then tag and push:
+Versions follow [Semantic Versioning](https://semver.org/). Bump `<Version>` in `Directory.Build.props`, add the changes to [CHANGELOG.md](CHANGELOG.md), then tag and push:
 
 ```bash
 git tag v1.1.0
 git push origin v1.1.0
 ```
 
-The [release workflow](.github/workflows/release.yml) builds the exe and publishes a GitHub Release, which running copies pick up automatically.
+The [release workflow](.github/workflows/release.yml) runs the tests, builds the exe and publishes a GitHub Release, which running copies pick up automatically.
 
 ## Credits
 

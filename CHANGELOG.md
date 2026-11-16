@@ -3,6 +3,15 @@
 All notable changes to Salaty Reminder are listed here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.0.2] - 2026-11-16
+
+### Fixed
+- After a reboot the widget could sit on the left over the weather widget, because Windows reports the tray area at x=0. It now finds the real tray edge through UI Automation and keeps correcting its position.
+
+### Changed
+- Repository reorganised into src/ and tests/ with a Core library for the prayer-time maths, one type per file and folder namespaces.
+- Unit tests check the calculated times against Aladhan, and a CI workflow builds and tests every push.
+
 ## [1.0.1] - 2026-11-16
 
 ### Fixed
@@ -25,5 +34,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Automatic updates from GitHub Releases with SHA-256 verification.
 - Windows 10 support: the task-button strip is shrunk to make room for the widget.
 
+[1.0.2]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.0.2
 [1.0.1]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.0.1
 [1.0.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.0.0
