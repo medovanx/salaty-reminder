@@ -84,9 +84,7 @@ sealed class TaskbarWidget : NativeWindow
     void Place()
     {
         if (!GetWindowRect(tray, out var tr)) return;
-        int anchor = tr.Right;
-        var notify = FindWindowEx(tray, IntPtr.Zero, "TrayNotifyWnd", null);
-        if (notify != IntPtr.Zero && GetWindowRect(notify, out var nr)) anchor = nr.Left;
+        int anchor = TrayLeftEdge(tr);
 
         // Step left of any other app's window embedded in the right half of the taskbar.
         GetWindowThreadProcessId(tray, out uint explorerPid);
@@ -111,9 +109,68 @@ sealed class TaskbarWidget : NativeWindow
             pos = new Point(Math.Max(0, anchor - size.Width - gap - shift - tr.Left), y);
             if (IsWin10) MakeRoomOnWin10(tr, pos.X + tr.Left - gap);
         }
-        if (pos == lastPos && IsWindowVisible(Handle)) return;
+        // Compare with where the window really is, so anything that moved it gets corrected.
+        if (pos == lastPos && IsWindowVisible(Handle) && GetWindowRect(Handle, out var cur)
+            && cur.Left - tr.Left == pos.X && cur.Top - tr.Top == pos.Y) return;
         lastPos = pos;
         SetWindowPos(Handle, IntPtr.Zero, pos.X, pos.Y, 0, 0, SWP_NOSIZE | SWP_NOACTIVATE | SWP_SHOWWINDOW);
+    }
+
+    volatile int uiaTrayLeft;   // last tray edge found through UI Automation
+    DateTime uiaCheckedAt;
+
+    /// <summary>
+    /// Screen x where the notification area starts. TrayNotifyWnd is right when it has real bounds,
+    /// but on some Windows 11 builds it stays 0 px wide at x=0 after boot (TrafficMonitor ends up
+    /// on the left for the same reason). Then ask UI Automation for the leftmost tray button.
+    /// </summary>
+    int TrayLeftEdge(RECT tr)
+    {
+        var notify = FindWindowEx(tray, IntPtr.Zero, "TrayNotifyWnd", null);
+        int mid = tr.Left + tr.Width / 2;
+        if (notify != IntPtr.Zero && GetWindowRect(notify, out var nr) && nr.Width > 0 && nr.Left > mid && nr.Right <= tr.Right + 2)
+            return nr.Left;
+
+        // UI Automation runs on a background thread: this window is inside the taskbar, so querying
+        // the taskbar from our own UI thread would call back into us and could deadlock.
+        // Refresh at most every 5 s; the result is used from the next placement on.
+        if (!uiaBusy && (DateTime.Now - uiaCheckedAt).TotalSeconds >= (uiaTrayLeft > mid ? 5 : 1))
+        {
+            uiaBusy = true;
+            uiaCheckedAt = DateTime.Now;
+            var taskbar = tray;
+            Task.Run(() =>
+            {
+                int found = UiaTrayLeft(taskbar, mid);
+                if (found > mid) uiaTrayLeft = found;
+                uiaBusy = false;
+            });
+        }
+        return uiaTrayLeft > mid ? uiaTrayLeft : tr.Right - (int)(300 * Scale); // until UIA answers: typical tray width
+    }
+
+    volatile bool uiaBusy;
+
+    static int UiaTrayLeft(IntPtr taskbar, int mid)
+    {
+        try
+        {
+            var root = System.Windows.Automation.AutomationElement.FromHandle(taskbar);
+            var cond = new System.Windows.Automation.PropertyCondition(
+                System.Windows.Automation.AutomationElement.AutomationIdProperty, "SystemTrayIcon");
+            int left = int.MaxValue;
+            foreach (System.Windows.Automation.AutomationElement e in root.FindAll(System.Windows.Automation.TreeScope.Descendants, cond))
+            {
+                var r = e.Current.BoundingRectangle;
+                if (r.Width > 0 && r.X > mid) left = Math.Min(left, (int)r.X);
+            }
+            return left == int.MaxValue ? 0 : left;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex);
+            return 0;
+        }
     }
 
     static readonly bool IsWin10 = Environment.OSVersion.Version.Build < 22000;

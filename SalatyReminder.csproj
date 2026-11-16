@@ -22,6 +22,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- UI Automation (in the WPF profile) finds the real tray edge when Explorer reports it wrong. -->
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WPF" />
     <EmbeddedResource Include="Assets\app.ico" LogicalName="app.ico" />
     <EmbeddedResource Include="Assets\adhan.ogg" LogicalName="adhan.ogg" Condition="Exists('Assets\adhan.ogg')" />
   </ItemGroup>

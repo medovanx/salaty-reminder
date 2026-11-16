@@ -141,14 +141,14 @@ sealed class ThemedCombo : Control
         int hover = -1, top;
 
         int RowH => (int)(30 * DeviceDpi / 96f);
-        int Visible => Math.Max(1, (Height - 2) / RowH);
+        int VisibleRows => Math.Max(1, (Height - 2) / RowH);
 
         protected override void OnCreateControl()
         {
             base.OnCreateControl();
             SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint, true);
             hover = owner.selected;
-            top = Math.Clamp(owner.selected - Visible + 1, 0, Math.Max(0, owner.Items.Count - Visible));
+            top = Math.Clamp(owner.selected - VisibleRows + 1, 0, Math.Max(0, owner.Items.Count - VisibleRows));
         }
 
         int IndexAt(Point p) { int i = top + (p.Y - 1) / RowH; return i >= 0 && i < owner.Items.Count ? i : -1; }
@@ -157,7 +157,7 @@ sealed class ThemedCombo : Control
         protected override void OnMouseClick(MouseEventArgs e) { int i = IndexAt(e.Location); if (i >= 0) owner.Pick(i); }
         protected override void OnMouseWheel(MouseEventArgs e)
         {
-            top = Math.Clamp(top + (e.Delta > 0 ? -1 : 1), 0, Math.Max(0, owner.Items.Count - Visible));
+            top = Math.Clamp(top + (e.Delta > 0 ? -1 : 1), 0, Math.Max(0, owner.Items.Count - VisibleRows));
             Invalidate();
         }
         protected override bool IsInputKey(Keys k) => k is Keys.Up or Keys.Down or Keys.Enter || base.IsInputKey(k);
@@ -167,7 +167,7 @@ sealed class ThemedCombo : Control
             else if (e.KeyCode == Keys.Up) hover = Math.Max(0, hover - 1);
             else if (e.KeyCode == Keys.Enter && hover >= 0) { owner.Pick(hover); return; }
             if (hover < top) top = hover;
-            if (hover >= top + Visible) top = hover - Visible + 1;
+            if (hover >= top + VisibleRows) top = hover - VisibleRows + 1;
             Invalidate();
         }
 
@@ -178,7 +178,7 @@ sealed class ThemedCombo : Control
             g.Clear(Theme.Surface);
             float s = DeviceDpi / 96f;
             bool rtl = RightToLeft == RightToLeft.Yes;
-            for (int i = top; i < Math.Min(owner.Items.Count, top + Visible); i++)
+            for (int i = top; i < Math.Min(owner.Items.Count, top + VisibleRows); i++)
             {
                 var r = new Rectangle(1, 1 + (i - top) * RowH, Width - 2, RowH);
                 var inner = Rectangle.Inflate(r, -(int)(4 * s), -(int)(2 * s));
