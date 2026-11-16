@@ -3,7 +3,10 @@ using System.Globalization;
 
 namespace SalatyReminder.UI.Controls;
 
-/// <summary>A month grid drawn in the card's style, with the Hijri day under each Gregorian day.</summary>
+/// <summary>
+/// A month grid drawn in the card's style, with the Hijri day under each Gregorian day.
+/// Clicking the title zooms out to a grid of months, then to a grid of years, to jump far quickly.
+/// </summary>
 sealed class CalendarPanel : Control
 {
     public event Action<DateOnly>? DatePicked;
@@ -14,6 +17,13 @@ sealed class CalendarPanel : Control
     bool dark;
     Rectangle rPrev, rNext, rTitle, rToday;
     readonly Dictionary<Rectangle, DateOnly> cells = [];
+    readonly Dictionary<Rectangle, int> picks = [];   // month (1-12) or year cells in the zoomed-out views
+
+    enum View { Days, Months, Years }
+    View view;
+    int yearStart;           // first year on the years page
+
+    const int MinYear = 1901, MaxYear = 2076;   // the span Umm al-Qura dates cover
     Point hoverPt = new(-1, -1);
 
     public CalendarPanel()
@@ -33,6 +43,7 @@ sealed class CalendarPanel : Control
         selected = date;
         month = new DateOnly(date.Year, date.Month, 1);
         hijriAdjust = hijri;
+        view = View.Days;
         dark = isDark;
         Size = Preferred;
         Visible = true;
@@ -41,7 +52,53 @@ sealed class CalendarPanel : Control
         Invalidate();
     }
 
-    void Shift(int months) { month = month.AddMonths(months); Invalidate(); }
+    /// <summary>The previous/next arrows: a month, a year or a page of years depending on the view.</summary>
+    void Shift(int step)
+    {
+        switch (view)
+        {
+            case View.Days:
+                var m = month.AddMonths(step);
+                if (m.Year is >= MinYear and <= MaxYear) month = m;
+                break;
+            case View.Months:
+                month = new DateOnly(Math.Clamp(month.Year + step, MinYear, MaxYear), month.Month, 1);
+                break;
+            case View.Years:
+                yearStart = Math.Clamp(yearStart + step * 12, MinYear, MaxYear - 11);
+                break;
+        }
+        Invalidate();
+    }
+
+    void ZoomOut()
+    {
+        if (view == View.Days) view = View.Months;
+        else if (view == View.Months)
+        {
+            view = View.Years;
+            yearStart = Math.Clamp(month.Year - 4, MinYear, MaxYear - 11);
+        }
+        Invalidate();
+    }
+
+    public void ZoomOutForShot() => ZoomOut();
+
+    /// <summary>Esc: step back towards the day grid. Returns false when already there.</summary>
+    public bool Back()
+    {
+        if (view == View.Days) return false;
+        view = view == View.Years ? View.Months : View.Days;
+        Invalidate();
+        return true;
+    }
+
+    void Pick(int value)
+    {
+        if (view == View.Months) { month = new DateOnly(month.Year, value, 1); view = View.Days; }
+        else { month = new DateOnly(value, month.Month, 1); view = View.Months; }
+        Invalidate();
+    }
 
     protected override void OnMouseWheel(MouseEventArgs e) { Shift(e.Delta > 0 ? -1 : 1); }
 
@@ -49,7 +106,8 @@ sealed class CalendarPanel : Control
     {
         hoverPt = e.Location;
         bool hot = rPrev.Contains(e.Location) || rNext.Contains(e.Location) || rToday.Contains(e.Location)
-                   || cells.Keys.Any(r => r.Contains(e.Location));
+                   || (view != View.Years && rTitle.Contains(e.Location))
+                   || cells.Keys.Any(r => r.Contains(e.Location)) || picks.Keys.Any(r => r.Contains(e.Location));
         Cursor = hot ? Cursors.Hand : Cursors.Default;
         Invalidate();
     }
@@ -61,13 +119,22 @@ sealed class CalendarPanel : Control
         if (rPrev.Contains(e.Location)) Shift(L.Ar ? 1 : -1);
         else if (rNext.Contains(e.Location)) Shift(L.Ar ? -1 : 1);
         else if (rToday.Contains(e.Location)) DatePicked?.Invoke(DateOnly.FromDateTime(DateTime.Now));
-        else foreach (var (r, d) in cells) if (r.Contains(e.Location)) { DatePicked?.Invoke(d); return; }
+        else if (rTitle.Contains(e.Location)) ZoomOut();
+        else if (view == View.Days) { foreach (var (r, d) in cells) if (r.Contains(e.Location)) { DatePicked?.Invoke(d); return; } }
+        else foreach (var (r, v) in picks) if (r.Contains(e.Location)) { Pick(v); return; }
     }
 
     protected override bool IsInputKey(Keys k) => k is Keys.Left or Keys.Right or Keys.Up or Keys.Down || base.IsInputKey(k);
 
     protected override void OnKeyDown(KeyEventArgs e)
     {
+        if (view != View.Days)
+        {
+            if (e.KeyCode == Keys.PageUp) Shift(-1);
+            else if (e.KeyCode == Keys.PageDown) Shift(1);
+            base.OnKeyDown(e);
+            return;
+        }
         int days = e.KeyCode switch { Keys.Left => L.Ar ? 1 : -1, Keys.Right => L.Ar ? -1 : 1, Keys.Up => -7, Keys.Down => 7, _ => 0 };
         if (days != 0)
         {
@@ -106,6 +173,8 @@ sealed class CalendarPanel : Control
         rPrev = new Rectangle(Px(8), Px(8), Px(32), Px(32));
         rNext = new Rectangle(Width - Px(40), Px(8), Px(32), Px(32));
         rTitle = new Rectangle(Px(40), Px(6), Width - Px(80), Px(22));
+        cells.Clear();
+        picks.Clear();
         using var fIcon = new Font(Art.IconFontName, 10f);
         using var fTitle = new Font("Segoe UI Semibold", 10.5f);
         using var fSub = new Font("Segoe UI", 8f);
@@ -121,7 +190,34 @@ sealed class CalendarPanel : Control
             TextRenderer.DrawText(g, glyph, fIcon, r, fg, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
         }
         var mdt = month.ToDateTime(TimeOnly.MinValue);
-        TextRenderer.DrawText(g, mdt.ToString("MMMM yyyy", culture), fTitle, rTitle, fg, center);
+        string title = view switch
+        {
+            View.Days => mdt.ToString("MMMM yyyy", culture),
+            View.Months => month.Year.ToString(CultureInfo.InvariantCulture),
+            // Laid out visually: the first year sits on the side the grid starts from.
+            _ => rtl ? $"{yearStart + 11} - {yearStart}" : $"{yearStart} - {yearStart + 11}",
+        };
+        // The title is a button (except at the top level): hover shows it, a chevron hints at it.
+        int tw = TextRenderer.MeasureText(g, title, fTitle, Size.Empty, TextFormatFlags.NoPadding).Width;
+        bool zoomable = view != View.Years;
+        int chevW = zoomable ? Px(16) : 0;
+        int titleW = tw + chevW + Px(12);
+        rTitle = new Rectangle((Width - titleW) / 2, Px(5), titleW, Px(24));
+        if (zoomable && rTitle.Contains(hoverPt)) FillRound(g, rTitle, Px(6), Color.FromArgb(dark ? 30 : 18, fg));
+        var rText = new Rectangle(rTitle.X + Px(6) + (rtl ? chevW : 0), rTitle.Y, tw, rTitle.Height);
+        TextRenderer.DrawText(g, title, fTitle, rText, fg, view == View.Days ? center : center & ~TextFormatFlags.RightToLeft);
+        if (zoomable)
+        {
+            using var fChev = new Font(Art.IconFontName, 7f);
+            var rChev = new Rectangle(rtl ? rTitle.X + Px(4) : rText.Right + Px(2), rTitle.Y + Px(1), chevW - Px(2), rTitle.Height);
+            TextRenderer.DrawText(g, "\uE70D", fChev, rChev, dim, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+        }
+        if (view != View.Days)
+        {
+            PaintPicker(g, culture, rtl, fg, dim, accent, center, fSub);
+            DrawToday(g, accent, center);
+            return;
+        }
         var lastDay = month.AddMonths(1).AddDays(-1).ToDateTime(TimeOnly.MinValue);
         string h1 = HijriMonthYear(mdt), h2 = HijriMonthYear(lastDay);
         // "Jumada al-Ula - Jumada al-Akhirah 1448 AH": the year once when both months share it.
@@ -140,7 +236,6 @@ sealed class CalendarPanel : Control
         }
 
         // Day grid
-        cells.Clear();
         var today = DateOnly.FromDateTime(DateTime.Now);
         int offset = ((int)month.DayOfWeek - (int)firstDow + 7) % 7;
         var start = month.AddDays(-offset);
@@ -172,10 +267,58 @@ sealed class CalendarPanel : Control
                 Color.FromArgb(inMonth || isSel ? 255 : 150, hc), center);
         }
 
-        // "Today" link
+        DrawToday(g, accent, center);
+    }
+
+    void DrawToday(Graphics g, Color accent, TextFormatFlags center)
+    {
         rToday = new Rectangle(Width / 2 - Px(60), Height - Px(26), Px(120), Px(20));
         using var fLink = new Font("Segoe UI Semibold", 9f, rToday.Contains(hoverPt) ? FontStyle.Underline : FontStyle.Regular);
         TextRenderer.DrawText(g, L.T("Today"), fLink, rToday, accent, center);
+    }
+
+    /// <summary>A 3 x 4 grid of months (of the shown year) or of years.</summary>
+    void PaintPicker(Graphics g, CultureInfo culture, bool rtl, Color fg, Color dim, Color accent, TextFormatFlags center, Font fSub)
+    {
+        // Hijri years the page spans, under the title, like the day view's Hijri months.
+        int gy1 = view == View.Months ? month.Year : yearStart, gy2 = view == View.Months ? month.Year : yearStart + 11;
+        var cal = new UmAlQuraCalendar();
+        DateTime a = new DateTime(gy1, 1, 1).AddDays(hijriAdjust), b = new DateTime(gy2, 12, 31).AddDays(hijriAdjust);
+        if (a >= cal.MinSupportedDateTime && b <= cal.MaxSupportedDateTime)
+        {
+            int h1 = cal.GetYear(a), h2 = cal.GetYear(b);
+            string sub = rtl ? (h1 == h2 ? $"هـ {h1}" : $"هـ {h2} - {h1}") : h1 == h2 ? $"{h1} AH" : $"{h1} - {h2} AH";
+            TextRenderer.DrawText(g, sub, fSub, new Rectangle(Px(6), Px(28), Width - Px(12), Px(16)), accent, center & ~TextFormatFlags.RightToLeft);
+        }
+
+        using var fItem = new Font("Segoe UI", 10f);
+        using var fItemB = new Font("Segoe UI Semibold", 10f);
+        var now = DateTime.Now;
+        int left = Px(10), top = Px(52), cols = 3, rows = 4;
+        int cw = (Width - Px(20)) / cols, ch = (Height - Px(34) - top) / rows;
+        for (int i = 0; i < 12; i++)
+        {
+            int col = i % cols, row = i / cols;
+            var r = new Rectangle(left + (rtl ? cols - 1 - col : col) * cw, top + row * ch, cw, ch);
+            int value = view == View.Months ? i + 1 : yearStart + i;
+            if (value > MaxYear && view == View.Years) continue;
+            picks[r] = value;
+            bool isSel = view == View.Months ? value == month.Month : value == month.Year;
+            bool isNow = view == View.Months ? month.Year == now.Year && value == now.Month : value == now.Year;
+            var inner = Rectangle.Inflate(r, -Px(3), -Px(3));
+            if (isSel) FillRound(g, inner, Px(8), accent);
+            else if (r.Contains(hoverPt)) FillRound(g, inner, Px(8), Color.FromArgb(dark ? 28 : 16, fg));
+            if (isNow && !isSel)
+            {
+                using var pen = new Pen(accent, Math.Max(1.2f, 1.5f * S));
+                using var p = Art.RoundRect(inner, Px(8));
+                g.DrawPath(pen, p);
+            }
+            string text = view == View.Months
+                ? (rtl ? culture.DateTimeFormat.GetMonthName(value) : culture.DateTimeFormat.GetAbbreviatedMonthName(value))
+                : value.ToString(CultureInfo.InvariantCulture);
+            TextRenderer.DrawText(g, text, isSel || isNow ? fItemB : fItem, inner, isSel ? Color.White : fg, center);
+        }
     }
 
     static Rectangle CellRect(int col, int left, int top, int cw, int ch, bool rtl) =>

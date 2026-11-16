@@ -41,7 +41,7 @@ sealed class PrayerCard : Form
         };
         tick.Tick += (_, _) => Invalidate();
         WireNavigation();
-        KeyDown += (_, e) => { if (e.KeyCode == Keys.Escape) Hide(); };
+        KeyDown += (_, e) => { if (e.KeyCode == Keys.Escape && !(cal.Visible && cal.Back())) Hide(); };
     }
 
     protected override CreateParams CreateParams
@@ -131,6 +131,7 @@ sealed class PrayerCard : Form
     }
 
     public void OpenCalendarForShot() { Refresh(); ToggleCalendar(); }
+    public void ZoomCalendarForShot() => cal.ZoomOutForShot();
 
     void WireNavigation()
     {

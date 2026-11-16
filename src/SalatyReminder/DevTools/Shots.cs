@@ -24,6 +24,10 @@ static class Shots
             SaveOffscreen(card, Path.Combine(dir, $"card-{lang}.png"));
             card.OpenCalendarForShot();
             SaveOffscreen(card, Path.Combine(dir, $"calendar-{lang}.png"));
+            card.ZoomCalendarForShot();
+            SaveOffscreen(card, Path.Combine(dir, $"calendar-months-{lang}.png"));
+            card.ZoomCalendarForShot();
+            SaveOffscreen(card, Path.Combine(dir, $"calendar-years-{lang}.png"));
             card.Close();
 
             var settings = new SettingsForm(app);
