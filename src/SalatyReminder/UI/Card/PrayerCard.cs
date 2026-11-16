@@ -293,7 +293,7 @@ sealed class PrayerCard : Form
             var c = isNext ? accent : past ? faint : p == Prayer.Sunrise ? dim : fg;
             var f = isNext ? fRowB : fRow;
             Art.PrayerGlyph(g, p, Box(24, y + rh / 2 - 10, 20, 20), isNext ? accent : past ? faint : dim);
-            if (st.ShowSunnah)
+            if (st.ShowSunnah && L.Sunnah(p).Length > 0)
             {
                 Draw(g, L.PrayerName(p, t), f, c, Box(56, y + 5, 170, 20));
                 Draw(g, L.Sunnah(p), fTiny, past ? faint : dim, Box(56, y + 24, 200, 16));

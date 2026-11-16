@@ -8,6 +8,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 ### Fixed
 - Closing a dropdown in Settings could crash the app on the next click, removing the widget from the taskbar. If anything else ever escapes like that, the app now logs it and restarts itself once.
 
+### Changed
+- Asr shows no sunnah line at all; its name sits centred in the row.
+
 ## [1.0.3] - 2026-11-16
 
 ### Changed

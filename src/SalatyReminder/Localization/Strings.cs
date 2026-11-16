@@ -98,7 +98,7 @@ public static class L
         Prayer.Fajr => Ar ? "السنة: ركعتان قبل الفرض" : "Sunnah: 2 before",
         Prayer.Sunrise => Ar ? "الضحى: بعد الشروق بربع ساعة" : "Duha: from ~15 min after sunrise",
         Prayer.Dhuhr => Ar ? "السنة: ٤ قبل، ٢ بعد" : "Sunnah: 4 before, 2 after",
-        Prayer.Asr => Ar ? "لا توجد سنة راتبة" : "No confirmed sunnah",
+        Prayer.Asr => "",
         Prayer.Maghrib => Ar ? "السنة: ركعتان بعد الفرض" : "Sunnah: 2 after",
         Prayer.Isha => Ar ? "السنة: ركعتان بعد، ثم الوتر" : "Sunnah: 2 after, then Witr",
         _ => "",
