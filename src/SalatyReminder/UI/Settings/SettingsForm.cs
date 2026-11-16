@@ -17,7 +17,7 @@ sealed class SettingsForm : Form
     // Location
     readonly Segmented segLocation = new(L.T("Auto"), L.T("Manual")) { Width = 300 };
     readonly ThemedText txtSearch = new() { Width = 300 }, txtCity = new() { Width = 300 };
-    readonly Button btnSearch = new() { AutoSize = true, Height = 27 };
+    readonly ThemedButton btnSearch = new() { AutoSize = true, Height = 27 };
     readonly ThemedCombo cmbResults = Combo(400);
     readonly ThemedNumber numLat = Num(-90, 90, 4), numLon = Num(-180, 180, 4);
     readonly Panel manualPanel = new() { AutoSize = true, Margin = Padding.Empty };
@@ -28,13 +28,13 @@ sealed class SettingsForm : Form
     readonly ToggleSwitch tglNotify = new(), tglEarly = new(), tglFlash = new(), tglAdhan = new();
     readonly ThemedNumber numEarly = Num(1, 120, 0);
     readonly ThemedText txtAdhan = new() { Width = 260 };
-    readonly Button btnBrowse = new() { AutoSize = true, Height = 27 }, btnTest = new() { AutoSize = true, Height = 27 };
+    readonly ThemedButton btnBrowse = new() { AutoSize = true, Height = 27 }, btnTest = new() { AutoSize = true, Height = 27 };
     // Updates
     readonly ToggleSwitch tglAutoCheck = new(), tglAutoInstall = new();
-    readonly Button btnCheck = new() { AutoSize = true, Height = 30 };
+    readonly ThemedButton btnCheck = new() { AutoSize = true, Height = 30 };
     readonly Label lblUpdate = new() { AutoSize = true, Tag = "dim", MaximumSize = new Size(440, 0) };
 
-    readonly Button btnSave = new() { Size = new Size(110, 34) }, btnCancel = new() { Size = new Size(110, 34) };
+    readonly ThemedButton btnSave = new() { Size = new Size(110, 34) }, btnCancel = new() { Size = new Size(110, 34) };
     readonly List<(string glyph, string title, Control page)> pages = [];
     readonly NavList nav;
     readonly Panel content = new() { Dock = DockStyle.Fill, Padding = new Padding(20, 20, 20, 0) };
