@@ -45,6 +45,11 @@ reminds you before it, plays the adhan, and speaks both English and Arabic.
     <td align="center"><img src="docs/screenshots/calendar-en.png" width="300"><br><sub>Calendar with Hijri dates</sub></td>
     <td align="center"><img src="docs/screenshots/card-ar.png" width="300"><br><sub>Arabic, right to left</sub></td>
   </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/calendar-months-en.png" width="300"><br><sub>Click the title to pick a month</sub></td>
+    <td align="center"><img src="docs/screenshots/calendar-years-en.png" width="300"><br><sub>Click again to pick a year</sub></td>
+    <td align="center"><img src="docs/screenshots/calendar-months-ar.png" width="300"><br><sub>Months in Arabic</sub></td>
+  </tr>
 </table>
 
 <table>
