@@ -11,23 +11,23 @@ sealed class SettingsForm : Form
     readonly Theme t = Theme.Current;
 
     // General
-    readonly ComboBox cmbLang = Combo(), cmbClock = Combo(), cmbSide = Combo();
-    readonly NumericUpDown numOffset = Num(-2000, 2000, 0);
+    readonly ThemedCombo cmbLang = Combo(), cmbClock = Combo(), cmbSide = Combo();
+    readonly ThemedNumber numOffset = Num(-2000, 2000, 0);
     readonly ToggleSwitch tglStartup = new(), tglSunnah = new();
     // Location
     readonly Segmented segLocation = new(L.T("Auto"), L.T("Manual")) { Width = 300 };
-    readonly TextBox txtSearch = new() { Width = 300 }, txtCity = new() { Width = 300 };
+    readonly ThemedText txtSearch = new() { Width = 300 }, txtCity = new() { Width = 300 };
     readonly Button btnSearch = new() { AutoSize = true, Height = 27 };
-    readonly ComboBox cmbResults = Combo(400);
-    readonly NumericUpDown numLat = Num(-90, 90, 4), numLon = Num(-180, 180, 4);
-    readonly Panel manualPanel = new() { AutoSize = true };
+    readonly ThemedCombo cmbResults = Combo(400);
+    readonly ThemedNumber numLat = Num(-90, 90, 4), numLon = Num(-180, 180, 4);
+    readonly Panel manualPanel = new() { AutoSize = true, Margin = Padding.Empty };
     // Calculation
-    readonly ComboBox cmbMethod = Combo(300), cmbAsr = Combo(300);
-    readonly NumericUpDown numHijri = Num(-2, 2, 0);
+    readonly ThemedCombo cmbMethod = Combo(300), cmbAsr = Combo(300);
+    readonly ThemedNumber numHijri = Num(-2, 2, 0);
     // Reminders
     readonly ToggleSwitch tglNotify = new(), tglEarly = new(), tglFlash = new(), tglAdhan = new();
-    readonly NumericUpDown numEarly = Num(1, 120, 0);
-    readonly TextBox txtAdhan = new() { Width = 260 };
+    readonly ThemedNumber numEarly = Num(1, 120, 0);
+    readonly ThemedText txtAdhan = new() { Width = 260 };
     readonly Button btnBrowse = new() { AutoSize = true, Height = 27 }, btnTest = new() { AutoSize = true, Height = 27 };
     // Updates
     readonly ToggleSwitch tglAutoCheck = new(), tglAutoInstall = new();
@@ -114,7 +114,7 @@ sealed class SettingsForm : Form
         var flow = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = false };
         var heading = new Label { Text = title, AutoSize = true, Font = new Font("Segoe UI Semibold", 17f), Margin = new Padding(2, 0, 0, 12) };
         flow.Controls.Add(heading);
-        foreach (var sec in sections) { sec.Width = 530; sec.Margin = new Padding(0, 0, 0, 12); flow.Controls.Add(sec); }
+        foreach (var sec in sections) { sec.Width = 526; sec.Margin = new Padding(0, 0, 0, 12); flow.Controls.Add(sec); }
         pages.Add((glyph, title, flow));
         return flow;
     }
@@ -312,14 +312,15 @@ sealed class SettingsForm : Form
 
     // ---------- layout helpers ----------
 
-    static ComboBox Combo(int width = 220) => new() { DropDownStyle = ComboBoxStyle.DropDownList, Width = width };
-    static NumericUpDown Num(int min, int max, int dec) => new() { Minimum = min, Maximum = max, DecimalPlaces = dec, Width = 110, Increment = dec > 0 ? 0.01m : 1, TextAlign = HorizontalAlignment.Center };
+    static ThemedCombo Combo(int width = 220) => new() { Width = width };
+    static ThemedNumber Num(int min, int max, int dec) => new() { Minimum = min, Maximum = max, DecimalPlaces = dec, Width = dec > 0 ? 150 : 120, Increment = dec > 0 ? 0.01m : 1 };
 
     Section Card(string title, string glyph, params Control[] rows)
     {
         var sec = new Section(title) { Glyph = glyph, Theme = t, RightToLeft = RightToLeft };
-        sec.MinimumSize = new Size(530, 0);
-        var stack = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true, Location = new Point(16, 44), MinimumSize = new Size(498, 0), RightToLeft = RightToLeft };
+        sec.MinimumSize = new Size(526, 0);
+        sec.MaximumSize = new Size(526, 0);
+        var stack = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true, Location = new Point(16, 44), MinimumSize = new Size(494, 0), MaximumSize = new Size(494, 0), RightToLeft = RightToLeft };
         foreach (var r in rows) stack.Controls.Add(r);
         sec.Controls.Add(stack);
         return sec;
@@ -328,11 +329,12 @@ sealed class SettingsForm : Form
     /// <summary>Label on the near side, control on the far side.</summary>
     static TableLayoutPanel Row(string label, Control c)
     {
-        var tl = new TableLayoutPanel { ColumnCount = 2, RowCount = 1, Width = 496, Height = Math.Max(36, (c.AutoSize ? c.PreferredSize.Height : c.Height) + 8), Margin = new Padding(0) };
+        var tl = new TableLayoutPanel { ColumnCount = 2, RowCount = 1, Width = 494, Height = Math.Max(36, (c.AutoSize ? c.PreferredSize.Height : c.Height) + 8), Margin = new Padding(0) };
         tl.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         tl.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
         tl.Controls.Add(new Label { Text = label, AutoSize = true, Anchor = AnchorStyles.Left, MaximumSize = new Size(300, 0) }, 0, 0);
         c.Anchor = AnchorStyles.Right;
+        c.Margin = new Padding(0, c.Margin.Top, 0, c.Margin.Bottom); // same edge for every control, in both directions
         tl.Controls.Add(c, 1, 0);
         return tl;
     }
@@ -356,8 +358,16 @@ sealed class SettingsForm : Form
 
     static FlowLayoutPanel Flow(params Control[] cs)
     {
+        // Children centred vertically; spacing only between them, so the last one lines up with
+        // single controls (toggles, dropdowns) in other rows.
         var p = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 4, 0, 4) };
-        foreach (var c in cs) { c.Margin = new Padding(0, 0, 8, 0); p.Controls.Add(c); }
+        int tallest = cs.Max(c => c.Height);
+        for (int i = 0; i < cs.Length; i++)
+        {
+            int top = (tallest - cs[i].Height) / 2;
+            cs[i].Margin = new Padding(0, top, i < cs.Length - 1 ? 8 : 0, 0);
+            p.Controls.Add(cs[i]);
+        }
         return p;
     }
 

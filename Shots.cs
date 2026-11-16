@@ -59,12 +59,19 @@ static class Shots
         strip.Save(path, System.Drawing.Imaging.ImageFormat.Png);
     }
 
+    /// <summary>Captures the window as it really looks on screen (DrawToBitmap misrenders child text boxes).</summary>
     static void Save(Form f, string path)
     {
-        Application.DoEvents();
+        f.TopMost = true;
+        f.BringToFront();
         f.Refresh();
-        using var bmp = new Bitmap(f.Width, f.Height);
-        f.DrawToBitmap(bmp, new Rectangle(Point.Empty, f.Size));
+        for (int i = 0; i < 10; i++) { Application.DoEvents(); Thread.Sleep(30); }
+        var r = f.Bounds;
+        // DWMWA_EXTENDED_FRAME_BOUNDS: the visible frame, without the invisible resize border.
+        if (Native.DwmGetWindowAttribute(f.Handle, 9, out var wr, System.Runtime.InteropServices.Marshal.SizeOf<Native.RECT>()) == 0)
+            r = Rectangle.FromLTRB(wr.Left, wr.Top, wr.Right, wr.Bottom);
+        using var bmp = new Bitmap(r.Width, r.Height);
+        using (var g = Graphics.FromImage(bmp)) g.CopyFromScreen(r.Location, Point.Empty, r.Size);
         bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);
     }
 }

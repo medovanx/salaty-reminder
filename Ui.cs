@@ -278,11 +278,14 @@ static class Styler
                 case Label l:
                     l.ForeColor = l.Tag as string == "dim" ? t.Dim : t.Text; l.BackColor = Color.Transparent; break;
                 case ToggleSwitch ts: ts.Theme = t; break;
+                case ThemedCombo tc: tc.Theme = t; break;
+                case ThemedNumber tn: tn.Theme = t; break;
+                case ThemedText tt: tt.Theme = t; break;
                 case Segmented sg: sg.Theme = t; break;
                 case Section se: se.Theme = t; break;
             }
             if (c is Panel or TableLayoutPanel or FlowLayoutPanel && c is not Section) c.BackColor = Color.Transparent;
-            Apply(c, t);
+            if (c is not (ThemedText or ThemedNumber or ThemedCombo)) Apply(c, t); // they style their own insides
         }
     }
 
