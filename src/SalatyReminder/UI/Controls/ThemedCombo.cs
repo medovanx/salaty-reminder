@@ -81,7 +81,16 @@ sealed class ThemedCombo : Control
         var host = new ToolStripControlHost(list) { Margin = Padding.Empty, Padding = Padding.Empty, AutoSize = false, Size = list.Size };
         popup = new ToolStripDropDown { Padding = Padding.Empty, DropShadowEnabled = true, BackColor = Theme.Surface, Renderer = new BorderRenderer(Theme) };
         popup.Items.Add(host);
-        popup.Closed += (_, _) => { open = false; Invalidate(); popup?.Dispose(); popup = null; };
+        popup.Closed += (_, _) =>
+        {
+            open = false;
+            Invalidate();
+            // WinForms' menu filter still touches the dropdown after Closed: dispose it once that is done,
+            // or the next click crashes the app with ObjectDisposedException.
+            var closing = popup;
+            popup = null;
+            if (closing != null && IsHandleCreated) BeginInvoke(closing.Dispose);
+        };
         open = true;
         Invalidate();
         popup.Show(this, new Point(0, Height + 2));

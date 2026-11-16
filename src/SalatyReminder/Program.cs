@@ -17,7 +17,7 @@ static class Program
         try
         {
             // After an update the old version is still exiting: wait for it to let go.
-            created = mutex.WaitOne(args.Contains("--updated") ? TimeSpan.FromSeconds(20) : TimeSpan.Zero);
+            created = mutex.WaitOne(args.Contains("--updated") || args.Contains("--restarted") ? TimeSpan.FromSeconds(20) : TimeSpan.Zero);
         }
         catch (AbandonedMutexException) { created = true; }
         if (!created)
@@ -32,7 +32,19 @@ static class Program
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
         Application.ThreadException += (_, e) => Log.Error(e.Exception);
         AppDomain.CurrentDomain.UnhandledException += (_, e) => Log.Error(e.ExceptionObject as Exception);
-        Application.Run(new SalatyApp());
+        try
+        {
+            Application.Run(new SalatyApp());
+        }
+        catch (Exception ex)
+        {
+            // Something escaped the message loop (a WinForms message filter, for example). Log it and come back,
+            // once, rather than vanishing from the taskbar.
+            Log.Error(ex);
+            if (!args.Contains("--restarted"))
+                try { System.Diagnostics.Process.Start(Environment.ProcessPath!, "--restarted"); } catch { }
+            return 1;
+        }
         return 0;
     }
 }
