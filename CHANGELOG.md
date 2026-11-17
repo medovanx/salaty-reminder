@@ -3,6 +3,11 @@
 All notable changes to Salaty Reminder are listed here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.6.3] - 2026-11-17
+
+### Added
+- The card shows how long the day and the night are, under the night times. The day runs from Fajr to Maghrib and the night from Maghrib to the next Fajr, the same night that Midnight halves.
+
 ## [1.6.2] - 2026-11-17
 
 ### Changed
@@ -138,6 +143,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Automatic updates from GitHub Releases with SHA-256 verification.
 - Windows 10 support: the task-button strip is shrunk to make room for the widget.
 
+[1.6.3]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.3
 [1.6.2]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.2
 [1.6.1]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.1
 [1.6.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.0

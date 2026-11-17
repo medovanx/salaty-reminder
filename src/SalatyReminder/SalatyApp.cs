@@ -191,6 +191,14 @@ sealed class SalatyApp : ApplicationContext
         return NightTimes.Between(day[Prayer.Maghrib], next[Prayer.Fajr]);
     }
 
+    /// <summary>The day from Fajr to Maghrib and the night from Maghrib to the next Fajr, as the fiqh counts them.</summary>
+    public (TimeSpan Day, TimeSpan Night) DayAndNight(DateOnly date)
+    {
+        var day = Today?.Date == date ? Today : TimesFor(date);
+        var next = Today?.Date == date && tomorrow != null ? tomorrow : TimesFor(date.AddDays(1));
+        return (day[Prayer.Maghrib] - day[Prayer.Fajr], next[Prayer.Fajr] - day[Prayer.Maghrib]);
+    }
+
     void UpdateWidget(DateTime now)
     {
         if (Today == null) return;

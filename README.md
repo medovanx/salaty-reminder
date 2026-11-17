@@ -32,7 +32,7 @@ reminds you before it, plays the adhan, and speaks both English and Arabic.
 - **Prayer card.** Click the widget for all six times with an icon for each in the colours of the sky, a progress bar from the last prayer to the next, the Gregorian and Hijri dates, and the sunnah rawatib for each prayer.
 - **Any day, not just today.** Step through days with the arrows, mouse wheel or arrow keys, or open the calendar (with Hijri days under each date) and jump anywhere: click its title to pick a month or a year directly.
 - **Islamic occasions.** The calendar marks the Islamic New Year, Ashura, the start of Ramadan, both Eids and the Day of Arafah in gold and the white days in teal, and names every occasion and sunnah fast (Mondays, Thursdays, six of Shawwal, the first ten of Dhu al-Hijjah, the last ten nights) when you point at a day.
-- **Night times.** Midnight and the start of the last third of the night, for Qiyam, under the prayer list. This is the Islamic midnight, halfway from Maghrib to Fajr rather than 12:00; the "i" beside it says so.
+- **Night times.** Midnight and the start of the last third of the night, for Qiyam, under the prayer list. This is the Islamic midnight, halfway from Maghrib to Fajr rather than 12:00; the "i" beside it says so. Below them, the length of the day (Fajr to Maghrib) and of the night (Maghrib to Fajr).
 - **Reminders.** A notification at prayer time, an early heads-up a few minutes before, a flashing widget, and an optional adhan (a built-in recording or your own MP3/WAV/OGG file). Also: Surat Al-Kahf on Friday morning and Jumu'ah 45 minutes ahead, the morning and evening adhkar, and (if you turn it on) a reminder the evening before a sunnah fast.
 - **Automatic location.** Uses Windows location, falls back to your IP address, or pick any city by name.
 - **Accurate times.** Astronomical calculation with nine methods (Egyptian General Authority, Muslim World League, Umm al-Qura, ISNA, Karachi, Kuwait, Qatar, Dubai, Diyanet), Shafi'i or Hanafi Asr, and correct daylight saving changes.
@@ -115,7 +115,7 @@ The exe is self-contained, so you don't need to install .NET. Windows SmartScree
 | Location | Detect automatically, or search for a city; latitude and longitude can be edited |
 | Calculation | Method, Asr (Standard or Hanafi), Hijri date adjustment of up to 2 days |
 | Reminders | Notification at prayer time, early reminder and its minutes, flash the widget, play the adhan and pick its file |
-| Extras | Ramadan mode, occasions and fasting days on the calendar, reminder before a sunnah fast, Friday reminders, adhkar reminders, midnight and the last third of the night |
+| Extras | Ramadan mode, occasions and fasting days on the calendar, reminder before a sunnah fast, Friday reminders, adhkar reminders, midnight, the last third of the night, and the length of the day and night |
 | Updates | Check automatically, install automatically, check now |
 
 Settings are stored in `%APPDATA%\SalatyReminder\settings.json`. There is no tray icon: notifications are Windows toasts, and the app registers its name and icon for them under `HKCU\Software\Classes\AppUserModelId\medovanx.SalatyReminder`.

@@ -110,6 +110,8 @@ public static class L
         ["MidnightInfo"] = ("Islamic midnight: halfway between Maghrib and Fajr, not 12:00. The preferred time for Isha ends here.",
                             "منتصف الليل الشرعي: منتصف ما بين المغرب والفجر، وليس الساعة 12. وعنده ينتهي الوقت المختار للعشاء."),
         ["LastThird"] = ("Last third {0}", "الثلث الأخير {0}"),
+        ["DayLength"] = ("Day length: {0}", "طول النهار: {0}"),
+        ["NightLength"] = ("Night length: {0}", "طول الليل: {0}"),
         ["MiddleOfNight"] = ("Midnight", "منتصف الليل"),
         ["LastThirdOfNight"] = ("Last third of the night", "الثلث الأخير من الليل"),
         ["ImsakLabel"] = ("Imsak", "الإمساك"),
@@ -155,6 +157,9 @@ public static class L
     public static string F(string key, params object[] args) => string.Format(T(key), args);
 
     /// <summary>Keeps numbers and units in left-to-right order inside Arabic text.</summary>
+    /// <summary>A length like "13 h 12 min" or "13 س 12 د".</summary>
+    public static string Span(TimeSpan d) => Ar ? $"{(int)d.TotalHours} س {d.Minutes} د" : $"{(int)d.TotalHours} h {d.Minutes} min";
+
     public static string Ltr(string s) => "\u200E" + s + "\u200E";
 
     /// <summary>"512 B", "1.5 KB", "32.8 MB" in binary units.</summary>

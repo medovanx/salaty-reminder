@@ -7,7 +7,7 @@ sealed class PrayerCard : Form
 {
     const int W = 340, HeaderH = 192;
     float RowH => app.S.ShowSunnah ? 46 : 38;
-    float NightH => app.S.ShowNightTimes ? 22 : 0;
+    float NightH => app.S.ShowNightTimes ? 40 : 0;
     int H => (int)(258 + RowH * 6 + NightH + 92);
 
     readonly SalatyApp app;
@@ -382,6 +382,11 @@ sealed class PrayerCard : Form
             // One pixel taller than the digits on each side, so its middle row is exactly theirs.
             float inkH = inkBottom - inkTop;
             Art.GlyphFit(g, "", new RectangleF(ix, lineY + inkTop - 1, icon, inkH + 2), tipShown ? accent : dim);
+            // Under it, how long the day (Fajr to Maghrib) and the night (Maghrib to Fajr) are.
+            var (dayLen, nightLen) = app.DayAndNight(day);
+            string len = L.F("DayLength", L.Span(dayLen)) + "     " + L.F("NightLength", L.Span(nightLen));
+            TextRenderer.DrawText(g, len, fTiny, new Rectangle(0, lineY + Px(18), Width, lineH), faint,
+                mf | TextFormatFlags.VerticalCenter | TextFormatFlags.HorizontalCenter | (L.Ar ? TextFormatFlags.RightToLeft : 0));
             y += NightH;
         }
 
