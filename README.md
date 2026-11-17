@@ -33,8 +33,8 @@ reminds you before it, plays the adhan, and speaks both English and Arabic.
 - **Reminders.** A notification at prayer time, an early heads-up a few minutes before, a flashing widget, and an optional adhan (a built-in recording or your own MP3/WAV/OGG file).
 - **Automatic location.** Uses Windows location, falls back to your IP address, or pick any city by name.
 - **Accurate times.** Astronomical calculation with nine methods (Egyptian General Authority, Muslim World League, Umm al-Qura, ISNA, Karachi, Kuwait, Qatar, Dubai, Diyanet), Shafi'i or Hanafi Asr, and correct daylight saving changes.
-- **English and Arabic.** Full right-to-left layout in Arabic.
-- **Auto-updates.** Checks GitHub Releases, verifies the download's SHA-256 and updates itself in place. It never restarts during the adhan or near a prayer.
+- **English and Arabic.** Full right-to-left layout in Arabic; switch from Settings or the widget's right-click menu.
+- **Auto-updates.** Checks GitHub Releases, verifies the download's SHA-256 and updates itself in place, with progress shown in Settings and on the widget. It never restarts during the adhan or near a prayer.
 - **Light and native.** One small Windows app, no Electron, no ads, no account.
 
 ## Screenshots
@@ -62,6 +62,13 @@ reminds you before it, plays the adhan, and speaks both English and Arabic.
     <td align="center">
       <img src="docs/screenshots/widget-flash-en.png"><br><sub>At prayer time the widget flashes</sub><br><br>
       <img src="docs/screenshots/widget-ar.png"><br><sub>Arabic widget</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/settings-updating-en.png" width="440"><br><sub>Updates, with download progress</sub></td>
+    <td align="center">
+      <img src="docs/screenshots/menu-en.png"><br><sub>Right-click menu</sub><br><br>
+      <img src="docs/screenshots/widget-updating-en.png"><br><sub>The widget shows update progress too</sub>
     </td>
   </tr>
 </table>
