@@ -30,6 +30,14 @@ static class Shots
             SaveOffscreen(card, Path.Combine(dir, $"calendar-years-{lang}.png"));
             card.Close();
 
+            // The card on the light theme too, to check the deeper light-theme colours.
+            Native.ForceDark = false;
+            var light = new PrayerCard(app);
+            light.ShowNear(new Rectangle(Screen.PrimaryScreen!.WorkingArea.Right - 300, Screen.PrimaryScreen.WorkingArea.Bottom, 100, 40));
+            SaveOffscreen(light, Path.Combine(dir, $"card-light-{lang}.png"));
+            light.Close();
+            Native.ForceDark = null;
+
             var settings = new SettingsForm(app);
             settings.Show();
             for (int i = 0; i < settings.PageCount; i++)

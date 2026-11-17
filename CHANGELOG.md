@@ -3,6 +3,11 @@
 All notable changes to Salaty Reminder are listed here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.5.0] - 2026-11-17
+
+### Changed
+- Prayer icons on the card are in full colour, following the sky: a blue dawn moon for Fajr, an orange rising sun, a yellow noon sun for Dhuhr, an amber afternoon sun for Asr, a red setting sun for Maghrib and a pale moon with a gold star for Isha. Prayers that have passed fade. The icons are drawn at four times their size and scaled down, so their edges stay smooth.
+
 ## [1.4.4] - 2026-11-17
 
 ### Changed
@@ -110,6 +115,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Automatic updates from GitHub Releases with SHA-256 verification.
 - Windows 10 support: the task-button strip is shrunk to make room for the widget.
 
+[1.5.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.5.0
 [1.4.4]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.4.4
 [1.4.3]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.4.3
 [1.4.2]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.4.2

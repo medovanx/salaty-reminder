@@ -40,9 +40,13 @@ static class Native
 
     public const uint SWP_NOSIZE = 0x1, SWP_NOACTIVATE = 0x10, SWP_SHOWWINDOW = 0x40;
 
+    /// <summary>For --shots: render light or dark whatever Windows uses.</summary>
+    public static bool? ForceDark { get; set; }
+
     /// <summary>True when Windows uses a dark taskbar / dark system theme.</summary>
     public static bool SystemDark()
     {
+        if (ForceDark is { } forced) return forced;
         using var k = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
         return k?.GetValue("SystemUsesLightTheme") is not int v || v == 0;
     }

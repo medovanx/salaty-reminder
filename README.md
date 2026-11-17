@@ -28,7 +28,7 @@ reminds you before it, plays the adhan, and speaks both English and Arabic.
 
 - **Lives in the taskbar.** Embedded right next to the notification area, like the weather widget. It hides with the taskbar in fullscreen apps, survives Explorer restarts and steps aside for other taskbar tools such as TrafficMonitor.
 - **Next prayer at a glance.** Name, time and a live countdown. Friday's Dhuhr shows as Jumu'ah.
-- **Prayer card.** Click the widget for all six times, a progress bar from the last prayer to the next, the Gregorian and Hijri dates, and the sunnah rawatib for each prayer.
+- **Prayer card.** Click the widget for all six times with an icon for each in the colours of the sky, a progress bar from the last prayer to the next, the Gregorian and Hijri dates, and the sunnah rawatib for each prayer.
 - **Any day, not just today.** Step through days with the arrows, mouse wheel or arrow keys, or open the calendar (with Hijri days under each date) and jump anywhere: click its title to pick a month or a year directly.
 - **Reminders.** A notification at prayer time, an early heads-up a few minutes before, a flashing widget, and an optional adhan (a built-in recording or your own MP3/WAV/OGG file).
 - **Automatic location.** Uses Windows location, falls back to your IP address, or pick any city by name.
