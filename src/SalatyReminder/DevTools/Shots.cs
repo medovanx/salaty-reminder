@@ -50,16 +50,27 @@ static class Shots
                 $"{L.PrayerName(p, at)} {L.Time(at, false)}", L.Countdown(at - DateTime.Now), false, lang == "ar");
             WidgetStrip(Path.Combine(dir, $"widget-flash-{lang}.png"),
                 $"{L.PrayerName(p, at)} {L.Time(at, false)}", L.T("TimeToPray"), true, lang == "ar");
+            WidgetStrip(Path.Combine(dir, $"widget-checking-{lang}.png"),
+                $"{L.PrayerName(p, at)} {L.Time(at, false)}", L.T("WidgetChecking"), false, lang == "ar", bar: true);
+            WidgetStrip(Path.Combine(dir, $"widget-updating-{lang}.png"),
+                $"{L.PrayerName(p, at)} {L.Time(at, false)}", L.F("WidgetUpdating", L.Ltr("42%")), false, lang == "ar", bar: true, barValue: 0.42);
+            var menu = app.MenuForShot();
+            using (var mb = new Bitmap(menu.Width, menu.Height))
+            {
+                menu.DrawToBitmap(mb, new Rectangle(Point.Empty, menu.Size));
+                mb.Save(Path.Combine(dir, $"menu-{lang}.png"), System.Drawing.Imaging.ImageFormat.Png);
+            }
+            menu.Close();
         }
         return 0;
     }
 
     /// <summary>The widget on a dark taskbar-coloured strip, at 150% scale for a crisp README image.</summary>
-    static void WidgetStrip(string path, string l1, string l2, bool flash, bool rtl)
+    static void WidgetStrip(string path, string l1, string l2, bool flash, bool rtl, bool bar = false, double? barValue = null)
     {
         const float s = 1.5f;
         int h = (int)(48 * s);
-        using var widget = TaskbarWidget.Paint(l1, l2, flash, false, rtl, true, s, h);
+        using var widget = TaskbarWidget.Paint(l1, l2, flash, false, rtl, true, s, h, bar, barValue, 0.5f);
         using var strip = new Bitmap(widget.Width + (int)(40 * s), h);
         using (var g = Graphics.FromImage(strip))
         {

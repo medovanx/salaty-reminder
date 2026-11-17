@@ -37,6 +37,9 @@ sealed class SalatyApp : ApplicationContext
     readonly TaskbarWidget widget = new();
     readonly ContextMenuStrip menu = new();
     readonly System.Windows.Forms.Timer timer = new() { Interval = 1000 };
+    /// <summary>Slides the widget's update bar while the end isn't known.</summary>
+    readonly System.Windows.Forms.Timer barTimer = new() { Interval = 40 };
+    float barPhase = 0.4f;
     readonly HashSet<string> fired = [];
     PrayerCard? card;
     SettingsForm? settingsForm;
@@ -59,6 +62,7 @@ sealed class SalatyApp : ApplicationContext
 
         host = new HostWindow(this);
         menu.Opening += (_, e) => { BuildMenu(); e.Cancel = false; };
+        barTimer.Tick += (_, _) => { barPhase = (barPhase + 0.02f) % 1f; SyncWidgetBar(); };
 
         if (Headless) { Recompute(); return; }
         // No tray icon: the widget is the app's face, and notifications are real Windows toasts.
@@ -165,7 +169,11 @@ sealed class SalatyApp : ApplicationContext
         else
         {
             var (p, at) = GetNext(now);
-            widget.SetContent($"{L.PrayerName(p, at)} {L.Time(at, S.Use24h)}", L.Countdown(at - now), false, L.Ar);
+            // While an update runs the second line says so, with the bar under it.
+            string line2 = !UpdateBusy ? L.Countdown(at - now)
+                : UpdateFraction is { } f && f < 1 ? L.F("WidgetUpdating", L.Ltr($"{f * 100:0}%"))
+                : L.T(installing ? "WidgetInstalling" : "WidgetChecking");
+            widget.SetContent($"{L.PrayerName(p, at)} {L.Time(at, S.Use24h)}", line2, false, L.Ar);
         }
     }
 
@@ -301,6 +309,9 @@ sealed class SalatyApp : ApplicationContext
     void SetUpdate(bool busy, double? fraction, string status)
     {
         UpdateBusy = busy; UpdateFraction = fraction; UpdateStatus = status;
+        barTimer.Enabled = busy && fraction == null && !Headless;
+        UpdateWidget(DateTime.Now);
+        SyncWidgetBar();
         UpdateChanged?.Invoke();
     }
 
@@ -336,6 +347,11 @@ sealed class SalatyApp : ApplicationContext
         Toast.Show(L.T("AppName"), L.F("UpdateAvailable", ver), () => _ = InstallUpdateAsync(rel));
         SetUpdate(false, null, L.F("UpdateAvailable", ver));
         return L.F("UpdateAvailable", ver);
+    }
+
+    void SyncWidgetBar()
+    {
+        if (!Headless) widget.SetProgress(UpdateBusy, UpdateFraction, barPhase);
     }
 
     /// <summary>Don't restart during the adhan or in the few minutes around a prayer.</summary>
@@ -375,10 +391,19 @@ sealed class SalatyApp : ApplicationContext
         Updater.OpenPage(rel.PageUrl);
     }
 
+    /// <summary>For --shots: the widget's right-click menu, built and shown off screen.</summary>
+    public ContextMenuStrip MenuForShot()
+    {
+        BuildMenu();
+        menu.Show(new Point(-3000, -3000));
+        return menu;
+    }
+
     void BuildMenu()
     {
         menu.Items.Clear();
         menu.RightToLeft = L.Ar ? RightToLeft.Yes : RightToLeft.No;
+        menu.Renderer = new ThemedMenuRenderer(Theme.Current);
         menu.Items.Add(L.T("ShowTimes"), null, (_, _) => ShowCard()).Font = new Font(menu.Font, FontStyle.Bold);
         if (AdhanPlaying) menu.Items.Add(L.T("StopAdhan"), null, (_, _) => StopAlert());
         menu.Items.Add(new ToolStripSeparator());

@@ -3,6 +3,12 @@
 All notable changes to Salaty Reminder are listed here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.4.1] - 2026-11-17
+
+### Changed
+- The widget's right-click menu follows the app's light or dark theme.
+- While checking for or installing an update, the taskbar widget shows a progress bar along its bottom edge and the status on its second line, so a check from the right-click menu is visible too.
+
 ## [1.4.0] - 2026-11-17
 
 ### Added
@@ -85,6 +91,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Automatic updates from GitHub Releases with SHA-256 verification.
 - Windows 10 support: the task-button strip is shrunk to make room for the widget.
 
+[1.4.1]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.4.1
 [1.4.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.4.0
 [1.3.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.3.0
 [1.2.1]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.2.1

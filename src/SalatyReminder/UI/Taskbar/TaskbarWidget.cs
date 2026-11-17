@@ -79,6 +79,18 @@ sealed class TaskbarWidget : NativeWindow
 
     public void Invalidate() { if (Alive) { Render(); Place(); } }
 
+    bool barOn;
+    double? barValue;
+    float barPhase;
+
+    /// <summary>A thin bar along the pill's bottom edge: a fraction, or a sliding segment when <paramref name="value"/> is null.</summary>
+    public void SetProgress(bool on, double? value, float phase)
+    {
+        if (on == barOn && value == barValue && phase == barPhase) return;
+        barOn = on; barValue = value; barPhase = phase;
+        if (Alive) Render();
+    }
+
     float Scale => tray != IntPtr.Zero && GetDpiForWindow(tray) is var d and > 0 ? d / 96f : 1f;
 
     void Place()
@@ -193,7 +205,7 @@ sealed class TaskbarWidget : NativeWindow
     void Render()
     {
         if (!GetWindowRect(tray, out var tr)) return;
-        using var bmp = Paint(line1, line2, highlight, hover, rtl, SystemDark(), Scale, tr.Height);
+        using var bmp = Paint(line1, line2, highlight, hover, rtl, SystemDark(), Scale, tr.Height, barOn, barValue, barPhase);
         size = bmp.Size;
         int w = size.Width, h = size.Height;
         var screen = GetDC(IntPtr.Zero);
@@ -218,7 +230,8 @@ sealed class TaskbarWidget : NativeWindow
 
 
     /// <summary>Draws the widget (pill, crescent, two text lines) at a given scale and height.</summary>
-    public static Bitmap Paint(string line1, string line2, bool highlight, bool hover, bool rtl, bool dark, float s, int h)
+    public static Bitmap Paint(string line1, string line2, bool highlight, bool hover, bool rtl, bool dark, float s, int h,
+                               bool bar = false, double? barValue = null, float barPhase = 0)
     {
         using var f1 = new Font("Segoe UI Semibold", 12f * s, GraphicsUnit.Pixel);
         using var f2 = new Font("Segoe UI", 12f * s, GraphicsUnit.Pixel);
@@ -268,6 +281,24 @@ sealed class TaskbarWidget : NativeWindow
             var tr2 = new RectangleF(textX, y + f1.GetHeight(g) - 2 * s, textW, h);
             using (var b1 = new SolidBrush(fg)) g.DrawString(line1, f1, b1, tr1, sf);
             using (var b2 = new SolidBrush(fg2)) g.DrawString(line2, f2, b2, tr2, sf);
+
+            if (bar)
+            {
+                float bh = Math.Max(2f, 2.5f * s), inset = 6 * s;
+                var track = new RectangleF(box.X + inset, box.Bottom - bh - 2 * s, box.Width - 2 * inset, bh);
+                Art.FillRound(g, track, bh / 2, Color.FromArgb(dark ? 50 : 35, fg));
+                RectangleF fill;
+                if (barValue is { } v) fill = new RectangleF(track.X, track.Y, Math.Max(bh, track.Width * (float)Math.Clamp(v, 0, 1)), bh);
+                else
+                {
+                    float seg = track.Width / 3, t = (1 - MathF.Cos(barPhase * MathF.PI)) / 2;
+                    float x = track.X - seg + (track.Width + seg) * t;
+                    float l = Math.Max(track.X, x), r = Math.Min(track.Right, x + seg);
+                    fill = new RectangleF(l, track.Y, Math.Max(0, r - l), bh);
+                }
+                if (rtl) fill.X = track.Right - (fill.X - track.X) - fill.Width;
+                if (fill.Width >= 1) Art.FillRound(g, fill, bh / 2, dark ? Color.FromArgb(86, 204, 170) : Color.FromArgb(12, 118, 96));
+            }
         }
         return bmp;
     }
