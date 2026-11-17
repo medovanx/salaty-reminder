@@ -66,6 +66,18 @@ sealed class ThemedMenuRenderer(Theme t) : ToolStripRenderer
         }
     }
 
+    /// <summary>Item images (the app icon in the header) in full colour, even on a disabled item.</summary>
+    protected override void OnRenderItemImage(ToolStripItemImageRenderEventArgs e)
+    {
+        if (e.Image == null) return;
+        var r = e.ImageRectangle;
+        var g = e.Graphics;
+        g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+        // Same 2px inset as the icon-font glyphs, so the column lines up.
+        int inset = (int)Math.Round(2 * e.Item.Owner!.DeviceDpi / 96f) * (e.Item.Owner.RightToLeft == RightToLeft.Yes ? -1 : 1);
+        g.DrawImage(e.Image, new Rectangle(r.X + inset, (e.Item.Height - r.Height) / 2, r.Width, r.Height));
+    }
+
     // The check is drawn with the text (DrawMarginGlyph), so it lines up with it.
     protected override void OnRenderItemCheck(ToolStripItemImageRenderEventArgs e) { }
 
@@ -92,6 +104,10 @@ sealed class ThemedMenuRenderer(Theme t) : ToolStripRenderer
     protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
     {
         var it = e.Item;
+        // Windows lays the text out about 3.5px above the row's middle, which leaves the separators closer
+        // to the row below than the one above and the hover highlight off-centre. Centre it in the row.
+        var tr = e.TextRectangle;
+        e.TextRectangle = new Rectangle(tr.X, (it.Height - tr.Height) / 2, tr.Width, tr.Height);
         DrawMarginGlyph(e);
         bool danger = it.ForeColor.ToArgb() == Danger.ToArgb();
         e.TextColor = !it.Enabled ? t.Dim : danger ? Danger : it is ToolStripMenuItem { Checked: true } ? t.Accent : t.Text;

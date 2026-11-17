@@ -415,7 +415,8 @@ sealed class SalatyApp : ApplicationContext
         }
 
         // The app and its version, as a quiet header.
-        m.Items.Add(new ToolStripMenuItem($"{L.T("AppName")}  {L.Ltr("v" + Updater.CurrentText)}") { Enabled = false, Tag = new ThemedMenuRenderer.MenuGlyph("") });
+        int iconPx = (int)(16 * m.DeviceDpi / 96f);
+        m.Items.Add(new ToolStripMenuItem($"{L.T("AppName")}  {L.Ltr("v" + Updater.CurrentText)}") { Enabled = false, Image = new Icon(AppIcon, iconPx, iconPx).ToBitmap() });
         m.Items.Add(new ToolStripSeparator());
         var show = Item(L.T("ShowTimes"), Art.IconCalendar, ShowCard);
         show.Font = new Font("Segoe UI Semibold", 9.5f);
