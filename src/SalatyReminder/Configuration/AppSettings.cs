@@ -37,7 +37,7 @@ public sealed class AppSettings
     public bool FridayReminders { get; set; } = true;
     /// <summary>Morning adhkar after Fajr and evening adhkar after Asr.</summary>
     public bool AdhkarReminders { get; set; } = true;
-    /// <summary>Midnight and the last third of the night under the prayer list.</summary>
+    /// <summary>The middle of the night (Maghrib to Fajr) and its last third under the prayer list.</summary>
     public bool ShowNightTimes { get; set; } = true;
 
     /// <summary>"Right" = beside the tray, "Left" = left end of the taskbar.</summary>

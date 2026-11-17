@@ -183,7 +183,7 @@ sealed class SalatyApp : ApplicationContext
         return null;
     }
 
-    /// <summary>Midnight and the last third of the night that follows <paramref name="date"/>'s Maghrib.</summary>
+    /// <summary>The middle and the last third of the night that follows <paramref name="date"/>'s Maghrib.</summary>
     public NightTimes NightAfter(DateOnly date)
     {
         var day = Today?.Date == date ? Today : TimesFor(date);

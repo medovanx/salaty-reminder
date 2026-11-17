@@ -4,7 +4,7 @@ namespace SalatyReminder.UI.Taskbar;
 
 /// <summary>
 /// A small card above the widget after the mouse rests on it: today's Hijri date and occasion, the six times,
-/// Imsak and Iftar in Ramadan, and the night's midnight and last third. It never takes focus and hides as soon
+/// Imsak and Iftar in Ramadan, and the middle and last third of the night. It never takes focus and hides as soon
 /// as the mouse leaves; clicks pass through to the widget.
 /// </summary>
 sealed class HoverCard : Form
@@ -76,8 +76,8 @@ sealed class HoverCard : Form
         RightToLeft = L.Ar ? RightToLeft.Yes : RightToLeft.No;
         BackColor = new Theme(dark).Surface;
         float h = 12 + 20 + (DayLabel.Length > 0 ? 18 : 0) + 8 + 6 * 24 + 6;
-        if (RamadanToday) h += 22;
-        if (app.S.ShowNightTimes) h += 22;
+        if (RamadanToday) h += 6 + 2 * 20;
+        if (app.S.ShowNightTimes) h += 6 + 2 * 20;
         Size = new Size(Px(W), Px(h + 6));
         var wa = Screen.FromRectangle(a).WorkingArea;
         int x = Math.Clamp(a.Left + a.Width / 2 - Width / 2, wa.Left + Px(6), wa.Right - Width - Px(6));
@@ -148,19 +148,32 @@ sealed class HoverCard : Form
             y += 24;
         }
 
+        // Extra rows under a thin rule, each a label and a time like the prayers above, so nothing gets cut off.
+        void Extra(string label, DateTime at, Color c)
+        {
+            Draw(g, label, fSmall, c, Box(14, y, 150, 20));
+            Draw(g, L.Time(at, h24), fSmall, c, Box(130, y, W - 144, 20), far: true);
+            y += 20;
+        }
+        void Rule()
+        {
+            y += 3;
+            using var pen = new Pen(t.Border);
+            g.DrawLine(pen, Px(12), Px(y), Width - Px(12), Px(y));
+            y += 3;
+        }
         if (RamadanToday)
         {
-            y += 4;
-            Draw(g, $"{L.F("Imsak", L.Time(Ramadan.Imsak(today[Prayer.Fajr]), h24))}    {L.T("Iftar")} {L.Time(today[Prayer.Maghrib], h24)}",
-                fSmall, Art.GoldText(dark), Box(12, y, W - 24, 18), center: true);
-            y += 18;
+            Rule();
+            Extra(L.T("ImsakLabel"), Ramadan.Imsak(today[Prayer.Fajr]), Art.GoldText(dark));
+            Extra(L.T("Iftar"), today[Prayer.Maghrib], Art.GoldText(dark));
         }
         if (app.S.ShowNightTimes)
         {
-            y += 4;
+            Rule();
             var night = app.NightAfter(today.Date);
-            Draw(g, $"{L.F("Midnight", L.Time(night.Midnight, h24))}    {L.F("LastThird", L.Time(night.LastThird, h24))}",
-                fSmall, t.Dim, Box(12, y, W - 24, 18), center: true);
+            Extra(L.T("MiddleOfNight"), night.Midnight, t.Dim);
+            Extra(L.T("LastThirdOfNight"), night.LastThird, t.Dim);
         }
     }
 }
