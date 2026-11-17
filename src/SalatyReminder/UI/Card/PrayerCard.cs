@@ -365,28 +365,32 @@ sealed class PrayerCard : Form
         {
             var night = app.NightAfter(day);
             string a = L.F("Midnight", L.Time(night.Midnight, st.Use24h)), b = L.F("LastThird", L.Time(night.LastThird, st.Use24h));
+            var (dayLen, nightLen) = app.DayAndNight(day);
+            string c = L.F("DayLength", L.Span(dayLen)), d = L.F("NightLength", L.Span(nightLen));
             var mf = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine;
-            int wa = TextRenderer.MeasureText(g, a, fTiny, Size.Empty, mf).Width, wb = TextRenderer.MeasureText(g, b, fTiny, Size.Empty, mf).Width;
-            int icon = Px(13), gap = Px(4), sep = Px(18), lineY = Px(y + 2), lineH = Px(20);
-            int total = wa + gap + icon + sep + wb, x0 = (Width - total) / 2;
-            // Left to right: "Midnight 10:55 PM (i)   Last third 12:54 AM"; Arabic mirrors the order.
-            int ax = L.Ar ? x0 + total - wa : x0;
+            int M(string s) => TextRenderer.MeasureText(g, s, fTiny, Size.Empty, mf).Width;
+            int wa = M(a), wb = M(b), wc = M(c), wd = M(d);
+            int icon = Px(13), gap = Px(4), sep = Px(18), lineY = Px(y + 2), lineH = Px(20), line2 = lineY + Px(18);
+            // Two columns: Midnight over the day length, the last third over the night length, each column
+            // starting at the same edge (the left in English, the right in Arabic).
+            int col1 = Math.Max(wa + gap + icon, wc), col2 = Math.Max(wb, wd);
+            int total = col1 + sep + col2, x0 = (Width - total) / 2;
+            int c1 = L.Ar ? x0 + col2 + sep : x0, c2 = L.Ar ? x0 : x0 + col1 + sep;
+            int ax = L.Ar ? c1 + col1 - wa : c1;
             int ix = L.Ar ? ax - gap - icon : ax + wa + gap;
-            int bx = L.Ar ? x0 : ix + icon + sep;
+            int bx = L.Ar ? c2 + col2 - wb : c2;
+            int cx = L.Ar ? c1 + col1 - wc : c1, dx = L.Ar ? c2 + col2 - wd : c2;
             var tf = mf | TextFormatFlags.VerticalCenter | (L.Ar ? TextFormatFlags.RightToLeft : 0);
             TextRenderer.DrawText(g, a, fTiny, new Rectangle(ax, lineY, wa + Px(2), lineH), dim, tf);
             TextRenderer.DrawText(g, b, fTiny, new Rectangle(bx, lineY, wb + Px(2), lineH), dim, tf);
+            TextRenderer.DrawText(g, c, fTiny, new Rectangle(cx, line2, wc + Px(2), lineH), faint, tf);
+            TextRenderer.DrawText(g, d, fTiny, new Rectangle(dx, line2, wd + Px(2), lineH), faint, tf);
             rInfo = new Rectangle(ix - Px(2), lineY, icon + Px(4), lineH);
             // Centred on the digits' ink, a little taller than them, not on the text box (whose middle is lower).
             var (inkTop, inkBottom) = Art.TextInk(fTiny, lineH);
             // One pixel taller than the digits on each side, so its middle row is exactly theirs.
             float inkH = inkBottom - inkTop;
             Art.GlyphFit(g, "", new RectangleF(ix, lineY + inkTop - 1, icon, inkH + 2), tipShown ? accent : dim);
-            // Under it, how long the day (Fajr to Maghrib) and the night (Maghrib to Fajr) are.
-            var (dayLen, nightLen) = app.DayAndNight(day);
-            string len = L.F("DayLength", L.Span(dayLen)) + "     " + L.F("NightLength", L.Span(nightLen));
-            TextRenderer.DrawText(g, len, fTiny, new Rectangle(0, lineY + Px(18), Width, lineH), faint,
-                mf | TextFormatFlags.VerticalCenter | TextFormatFlags.HorizontalCenter | (L.Ar ? TextFormatFlags.RightToLeft : 0));
             y += NightH;
         }
 
