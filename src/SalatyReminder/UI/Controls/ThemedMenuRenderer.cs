@@ -64,28 +64,35 @@ sealed class ThemedMenuRenderer(Theme t) : ToolStripRenderer
             bool danger = it.ForeColor.ToArgb() == Danger.ToArgb();
             Art.FillRound(g, r, 5 * s, Color.FromArgb(t.Dark ? 40 : 24, danger ? Danger : t.Accent));
         }
-        if (it.Tag is MenuGlyph mg && it.Owner is { } owner && margins.TryGetValue(owner, out var m) && m.Width > 0)
-        {
-            bool rtl = owner.RightToLeft == RightToLeft.Yes;
-            float w = m.Width;
-            var box = new RectangleF(rtl ? it.Width - w : 0, 0, w, it.Height);
-            // Up a little: text is centred on its line box, whose visual middle sits above the box middle.
-            box.Offset(rtl ? -2 * s : 2 * s, -TextLift(s));
-            Art.GlyphCentered(g, mg.Glyph, 14 * s, box, !it.Enabled ? Color.FromArgb(120, t.Dim) : mg.Color ?? t.Dim);
-        }
     }
 
-    static float TextLift(float s) => 1.5f * s;
+    // The check is drawn with the text (DrawMarginGlyph), so it lines up with it.
+    protected override void OnRenderItemCheck(ToolStripItemImageRenderEventArgs e) { }
 
-    protected override void OnRenderItemCheck(ToolStripItemImageRenderEventArgs e)
+    /// <summary>
+    /// The icon or check in the image margin, centred on the text's own rectangle rather than the row:
+    /// Windows places menu text above the row's middle, so a row-centred icon sat low beside it.
+    /// </summary>
+    void DrawMarginGlyph(ToolStripItemTextRenderEventArgs e)
     {
-        float s = e.Item.Owner?.DeviceDpi / 96f ?? 1f;
-        Art.GlyphCentered(e.Graphics, "\uE73E", 11 * s, RectangleF.FromLTRB(e.ImageRectangle.Left, e.ImageRectangle.Top - TextLift(s), e.ImageRectangle.Right, e.ImageRectangle.Bottom - TextLift(s)), t.Accent);
+        var it = e.Item;
+        if (it.Owner is not { } owner || !margins.TryGetValue(owner, out var m) || m.Width <= 0) return;
+        bool icon = it.Tag is MenuGlyph;
+        string? glyph = it.Tag is MenuGlyph mg ? mg.Glyph : it is ToolStripMenuItem { Checked: true } ? "\uE73E" : null;
+        if (glyph == null) return;
+        float s = owner.DeviceDpi / 96f;
+        bool rtl = owner.RightToLeft == RightToLeft.Yes;
+        var line = e.TextRectangle;
+        var box = new RectangleF(rtl ? it.Width - m.Width : 0, line.Top, m.Width, line.Height);
+        box.Offset(rtl ? -2 * s : 2 * s, 0);
+        Color c = it.Tag is MenuGlyph g ? (!it.Enabled ? Color.FromArgb(120, t.Dim) : g.Color ?? t.Dim) : t.Accent;
+        Art.GlyphCentered(e.Graphics, glyph, (icon ? 14 : 11) * s, box, c);
     }
 
     protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
     {
         var it = e.Item;
+        DrawMarginGlyph(e);
         bool danger = it.ForeColor.ToArgb() == Danger.ToArgb();
         e.TextColor = !it.Enabled ? t.Dim : danger ? Danger : it is ToolStripMenuItem { Checked: true } ? t.Accent : t.Text;
         base.OnRenderItemText(e);

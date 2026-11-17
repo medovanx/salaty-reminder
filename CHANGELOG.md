@@ -3,6 +3,11 @@
 All notable changes to Salaty Reminder are listed here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.4.3] - 2026-11-17
+
+### Fixed
+- Icons and check marks in the widget's right-click menu sat a little low beside their text. They now centre on the text line.
+
 ## [1.4.2] - 2026-11-17
 
 ### Changed
@@ -97,6 +102,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Automatic updates from GitHub Releases with SHA-256 verification.
 - Windows 10 support: the task-button strip is shrunk to make room for the widget.
 
+[1.4.3]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.4.3
 [1.4.2]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.4.2
 [1.4.1]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.4.1
 [1.4.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.4.0
