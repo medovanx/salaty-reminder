@@ -3,6 +3,11 @@
 All notable changes to Salaty Reminder are listed here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.6.2] - 2026-11-17
+
+### Changed
+- Back to "Midnight", with an "i" beside it on the card: point at it for a note that this is the Islamic midnight, halfway from Maghrib to Fajr, not 12:00. The icon is centred exactly on the text.
+
 ## [1.6.1] - 2026-11-17
 
 ### Changed
@@ -133,6 +138,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Automatic updates from GitHub Releases with SHA-256 verification.
 - Windows 10 support: the task-button strip is shrunk to make room for the widget.
 
+[1.6.2]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.2
 [1.6.1]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.1
 [1.6.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.0
 [1.5.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.5.0

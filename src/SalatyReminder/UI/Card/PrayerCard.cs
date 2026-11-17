@@ -13,6 +13,10 @@ sealed class PrayerCard : Form
     readonly SalatyApp app;
     readonly System.Windows.Forms.Timer tick = new() { Interval = 1000 };
     readonly IconButton btnSettings = new(), btnRefresh = new();
+    /// <summary>Explains the Islamic midnight when the mouse rests on the "i" beside it.</summary>
+    readonly ToolTip tip = new() { OwnerDraw = true, InitialDelay = 250, ReshowDelay = 100 };
+    Rectangle rInfo;
+    bool tipShown;
     bool dark;
     public DateTime LastHidden { get; private set; }
 
@@ -41,6 +45,22 @@ sealed class PrayerCard : Form
             Invalidate();
         };
         tick.Tick += (_, _) => Invalidate();
+        // The tooltip in the card's theme instead of the stock light one.
+        tip.Popup += (_, e) =>
+        {
+            using var f = new Font("Segoe UI", 9f);
+            var sz = TextRenderer.MeasureText(L.T("MidnightInfo"), f, new Size(Px(250), 0), TextFormatFlags.WordBreak);
+            e.ToolTipSize = new Size(sz.Width + Px(20), sz.Height + Px(14));
+        };
+        tip.Draw += (_, e) =>
+        {
+            var th = new Theme(dark);
+            using (var b = new SolidBrush(th.Surface)) e.Graphics.FillRectangle(b, e.Bounds);
+            using (var p = new Pen(th.Border)) e.Graphics.DrawRectangle(p, 0, 0, e.Bounds.Width - 1, e.Bounds.Height - 1);
+            using var f = new Font("Segoe UI", 9f);
+            TextRenderer.DrawText(e.Graphics, e.ToolTipText, f, Rectangle.Inflate(e.Bounds, -Px(10), -Px(7)), th.Text,
+                TextFormatFlags.WordBreak | TextFormatFlags.VerticalCenter | (L.Ar ? TextFormatFlags.RightToLeft | TextFormatFlags.Right : 0));
+        };
         WireNavigation();
         KeyDown += (_, e) => { if (e.KeyCode == Keys.Escape && !(cal.Visible && cal.Back())) Hide(); };
     }
@@ -149,9 +169,17 @@ sealed class PrayerCard : Form
         };
         MouseMove += (_, e) =>
         {
+            bool overInfo = rInfo.Contains(e.Location);
+            if (overInfo != tipShown)
+            {
+                if (overInfo) tip.Show(L.T("MidnightInfo"), this, rInfo.Left, rInfo.Bottom + Px(4));
+                else tip.Hide(this);
+                tipShown = overInfo;
+                Invalidate(rInfo); // the "i" turns teal while it is pointed at
+            }
             bool hot = rPrev.Contains(e.Location) || rNext.Contains(e.Location) || rDate.Contains(e.Location)
                        || (viewDate != null && rToday.Contains(e.Location));
-            Cursor = hot ? Cursors.Hand : Cursors.Default;
+            Cursor = overInfo ? Cursors.Help : hot ? Cursors.Hand : Cursors.Default;
         };
         MouseWheel += (_, e) => { if (!cal.Visible) Go(e.Delta > 0 ? -1 : 1); };
         KeyDown += (_, e) =>
@@ -165,7 +193,7 @@ sealed class PrayerCard : Form
     protected override void OnVisibleChanged(EventArgs e)
     {
         base.OnVisibleChanged(e);
-        if (!Visible) { tick.Stop(); LastHidden = Clock.Now; }
+        if (!Visible) { tick.Stop(); LastHidden = Clock.Now; if (tipShown) { tip.Hide(this); tipShown = false; } }
     }
 
     /// <summary>Mirrors a left-to-right layout box for Arabic.</summary>
@@ -331,12 +359,29 @@ sealed class PrayerCard : Form
             y += rh;
         }
 
-        // The night after the viewed day: its middle and the start of its last third.
+        // The night after the viewed day: its middle (with an "i" that explains it is not 12:00) and the start of its last third.
+        rInfo = Rectangle.Empty;
         if (st.ShowNightTimes)
         {
             var night = app.NightAfter(day);
-            Draw(g, $"{L.F("Midnight", L.Time(night.Midnight, st.Use24h))}     {L.F("LastThird", L.Time(night.LastThird, st.Use24h))}",
-                fTiny, dim, Box(18, y + 2, W - 36, 20), center: true);
+            string a = L.F("Midnight", L.Time(night.Midnight, st.Use24h)), b = L.F("LastThird", L.Time(night.LastThird, st.Use24h));
+            var mf = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine;
+            int wa = TextRenderer.MeasureText(g, a, fTiny, Size.Empty, mf).Width, wb = TextRenderer.MeasureText(g, b, fTiny, Size.Empty, mf).Width;
+            int icon = Px(13), gap = Px(4), sep = Px(18), lineY = Px(y + 2), lineH = Px(20);
+            int total = wa + gap + icon + sep + wb, x0 = (Width - total) / 2;
+            // Left to right: "Midnight 10:55 PM (i)   Last third 12:54 AM"; Arabic mirrors the order.
+            int ax = L.Ar ? x0 + total - wa : x0;
+            int ix = L.Ar ? ax - gap - icon : ax + wa + gap;
+            int bx = L.Ar ? x0 : ix + icon + sep;
+            var tf = mf | TextFormatFlags.VerticalCenter | (L.Ar ? TextFormatFlags.RightToLeft : 0);
+            TextRenderer.DrawText(g, a, fTiny, new Rectangle(ax, lineY, wa + Px(2), lineH), dim, tf);
+            TextRenderer.DrawText(g, b, fTiny, new Rectangle(bx, lineY, wb + Px(2), lineH), dim, tf);
+            rInfo = new Rectangle(ix - Px(2), lineY, icon + Px(4), lineH);
+            // Centred on the digits' ink, a little taller than them, not on the text box (whose middle is lower).
+            var (inkTop, inkBottom) = Art.TextInk(fTiny, lineH);
+            // One pixel taller than the digits on each side, so its middle row is exactly theirs.
+            float inkH = inkBottom - inkTop;
+            Art.GlyphFit(g, "", new RectangleF(ix, lineY + inkTop - 1, icon, inkH + 2), tipShown ? accent : dim);
             y += NightH;
         }
 

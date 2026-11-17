@@ -105,10 +105,12 @@ public static class L
         ["SuhoorTitle"] = ("Suhoor: Fajr in {0} minutes", "السحور: الفجر بعد {0} دقيقة"),
         ["SuhoorBody"] = ("Imsak at {0}, Fajr at {1}", "الإمساك {0}، الفجر {1}"),
         // Night
-        // The middle of the night from Maghrib to Fajr, not 12:00.
-        ["Midnight"] = ("Middle of the night {0}", "منتصف الليل الشرعي {0}"),
+        // The middle of the night from Maghrib to Fajr, not 12:00; the card's info icon explains it.
+        ["Midnight"] = ("Midnight {0}", "منتصف الليل {0}"),
+        ["MidnightInfo"] = ("Islamic midnight: halfway between Maghrib and Fajr, not 12:00. The preferred time for Isha ends here.",
+                            "منتصف الليل الشرعي: منتصف ما بين المغرب والفجر، وليس الساعة 12. وعنده ينتهي الوقت المختار للعشاء."),
         ["LastThird"] = ("Last third {0}", "الثلث الأخير {0}"),
-        ["MiddleOfNight"] = ("Middle of the night", "منتصف الليل الشرعي"),
+        ["MiddleOfNight"] = ("Midnight", "منتصف الليل"),
         ["LastThirdOfNight"] = ("Last third of the night", "الثلث الأخير من الليل"),
         ["ImsakLabel"] = ("Imsak", "الإمساك"),
         // Friday and adhkar
@@ -129,7 +131,7 @@ public static class L
         ["FastingReminders"] = ("Remind me the evening before a sunnah fast", "تذكيري مساء اليوم السابق لصيام السنة"),
         ["FridayReminders"] = ("Friday: Surat Al-Kahf and Jumu'ah reminders", "الجمعة: تذكير بسورة الكهف وصلاة الجمعة"),
         ["AdhkarReminders"] = ("Morning and evening adhkar reminders", "تذكير بأذكار الصباح والمساء"),
-        ["ShowNightTimes"] = ("Show the middle and last third of the night", "عرض منتصف الليل الشرعي والثلث الأخير"),
+        ["ShowNightTimes"] = ("Show midnight and the last third of the night", "عرض منتصف الليل والثلث الأخير"),
         // Occasions
         ["IslamicNewYear"] = ("Islamic New Year", "رأس السنة الهجرية"),
         ["Tasua"] = ("Tasu'a", "تاسوعاء"),
