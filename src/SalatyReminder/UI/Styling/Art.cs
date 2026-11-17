@@ -29,6 +29,26 @@ static class Art
         return bmp;
     }
 
+    /// <summary>Draws an icon-font glyph with its real ink centred in <paramref name="box"/> (glyph boxes sit off-centre).</summary>
+    public static void GlyphCentered(Graphics g, string glyph, float emPixels, RectangleF box, Color c)
+    {
+        using var path = new GraphicsPath();
+        using var family = new FontFamily(IconFontName);
+        path.AddString(glyph, family, (int)FontStyle.Regular, emPixels, PointF.Empty, StringFormat.GenericTypographic);
+        var b = path.GetBounds();
+        if (b.Width <= 0 || b.Height <= 0) return;
+        using (var m = new Matrix())
+        {
+            m.Translate(box.Left + (box.Width - b.Width) / 2f - b.Left, box.Top + (box.Height - b.Height) / 2f - b.Top);
+            path.Transform(m);
+        }
+        var old = g.SmoothingMode;
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        using var brush = new SolidBrush(c);
+        g.FillPath(brush, path);
+        g.SmoothingMode = old;
+    }
+
     public static void FillRound(Graphics g, RectangleF r, float rad, Color c)
     {
         using var p = RoundRect(r, rad);

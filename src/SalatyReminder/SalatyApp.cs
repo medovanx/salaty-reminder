@@ -35,7 +35,7 @@ sealed class SalatyApp : ApplicationContext
 
     readonly HostWindow host;
     readonly TaskbarWidget widget = new();
-    readonly ContextMenuStrip menu = new();
+    ContextMenuStrip? menu;
     readonly System.Windows.Forms.Timer timer = new() { Interval = 1000 };
     /// <summary>Slides the widget's update bar while the end isn't known.</summary>
     readonly System.Windows.Forms.Timer barTimer = new() { Interval = 40 };
@@ -61,7 +61,6 @@ sealed class SalatyApp : ApplicationContext
         AppIcon = LoadIcon();
 
         host = new HostWindow(this);
-        menu.Opening += (_, e) => { BuildMenu(); e.Cancel = false; };
         barTimer.Tick += (_, _) => { barPhase = (barPhase + 0.02f) % 1f; SyncWidgetBar(); };
 
         if (Headless) { Recompute(); return; }
@@ -74,7 +73,11 @@ sealed class SalatyApp : ApplicationContext
         widget.RightClicked += () =>
         {
             Native.SetForegroundWindow(host.Handle);
-            menu.Show(Cursor.Position);
+            // A fresh menu each time: it reflects the current language, theme and update state.
+            var m = BuildMenu();
+            menu = m;
+            m.Closed += (_, _) => host.BeginInvoke(() => { m.Dispose(); if (menu == m) menu = null; });
+            m.Show(Cursor.Position);
         };
 
         SystemEvents.TimeChanged += (_, _) => host.BeginInvoke(Recompute);
@@ -394,40 +397,66 @@ sealed class SalatyApp : ApplicationContext
     /// <summary>For --shots: the widget's right-click menu, built and shown off screen.</summary>
     public ContextMenuStrip MenuForShot()
     {
-        BuildMenu();
-        menu.Show(new Point(-3000, -3000));
-        return menu;
+        var m = BuildMenu();
+        m.Show(new Point(-3000, -3000));
+        return m;
     }
 
-    void BuildMenu()
+    /// <summary>The widget's right-click menu in the app's style: theme surface, rounded rows and corners, icons.</summary>
+    ContextMenuStrip BuildMenu()
     {
-        menu.Items.Clear();
-        menu.RightToLeft = L.Ar ? RightToLeft.Yes : RightToLeft.No;
-        menu.Renderer = new ThemedMenuRenderer(Theme.Current);
-        menu.Items.Add(L.T("ShowTimes"), null, (_, _) => ShowCard()).Font = new Font(menu.Font, FontStyle.Bold);
-        if (AdhanPlaying) menu.Items.Add(L.T("StopAdhan"), null, (_, _) => StopAlert());
-        menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(L.T("RefreshLocation"), null, async (_, _) => await RefreshLocationAsync(userInitiated: true));
-        menu.Items.Add(L.T("Settings"), null, (_, _) => ShowSettings());
-        menu.Items.Add(L.T("CheckForUpdates"), null, async (_, _) =>
+        var t = Theme.Current;
+        var m = new ContextMenuStrip { RightToLeft = L.Ar ? RightToLeft.Yes : RightToLeft.No };
+        ToolStripMenuItem Item(string text, string? glyph, Action? click = null)
+        {
+            var it = new ToolStripMenuItem(text) { Tag = glyph == null ? null : new ThemedMenuRenderer.MenuGlyph(glyph) };
+            if (click != null) it.Click += (_, _) => click();
+            return it;
+        }
+
+        // The app and its version, as a quiet header.
+        m.Items.Add(new ToolStripMenuItem($"{L.T("AppName")}  {L.Ltr("v" + Updater.CurrentText)}") { Enabled = false, Tag = new ThemedMenuRenderer.MenuGlyph("") });
+        m.Items.Add(new ToolStripSeparator());
+        var show = Item(L.T("ShowTimes"), Art.IconCalendar, ShowCard);
+        show.Font = new Font("Segoe UI Semibold", 9.5f);
+        m.Items.Add(show);
+        if (AdhanPlaying) m.Items.Add(Item(L.T("StopAdhan"), "", StopAlert));
+        m.Items.Add(new ToolStripSeparator());
+        m.Items.Add(Item(L.T("RefreshLocation"), Art.IconLocation, () => _ = RefreshLocationAsync(userInitiated: true)));
+
+        // Language: applied at once; an open Settings window closes so it can't save the old one back.
+        var lang = Item(L.T("Language"), "");
+        foreach (var (code, name) in new[] { ("en", "English"), ("ar", "العربية") })
+        {
+            var item = new ToolStripMenuItem(name) { Checked = S.Language == code };
+            item.Click += (_, _) => SetLanguage(code);
+            lang.DropDownItems.Add(item);
+        }
+        m.Items.Add(lang);
+
+        m.Items.Add(new ToolStripSeparator());
+        m.Items.Add(Item(L.T("Settings"), Art.IconSettings, ShowSettings));
+        // While an update is checked for or installed, the item says how far it is instead (the widget shows a bar too).
+        if (UpdateBusy) m.Items.Add(new ToolStripMenuItem(UpdateStatus) { Enabled = false, Tag = new ThemedMenuRenderer.MenuGlyph("") });
+        else m.Items.Add(Item(L.T("CheckForUpdates"), "", async () =>
         {
             var msg = await CheckForUpdatesAsync(userInitiated: true);
             if (!installing) Toast.Show(L.T("AppName"), msg);
-        });
-        var lang = new ToolStripMenuItem(L.T("Language"));
-        foreach (var (code, name) in new[] { ("en", "English"), ("ar", "العربية") })
-            lang.DropDownItems.Add(new ToolStripMenuItem(name, null, (_, _) => SetLanguage(code)) { Checked = S.Language == code });
-        menu.Items.Add(lang);
+        }));
         var startup = new ToolStripMenuItem(L.T("StartWithWindows")) { Checked = AppSettings.StartWithWindows };
         startup.Click += (_, _) => { try { AppSettings.StartWithWindows = !startup.Checked; } catch { } };
-        menu.Items.Add(startup);
-        menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add(L.T("Exit"), null, (_, _) => Exit());
+        m.Items.Add(startup);
+        m.Items.Add(new ToolStripSeparator());
+        m.Items.Add(Item(L.T("Exit"), "", Exit));
+
+        ThemedMenuRenderer.Style(m, t);
+        return m;
     }
 
     void SetLanguage(string code)
     {
         if (S.Language == code) return;
+        if (settingsForm is { IsDisposed: false }) settingsForm.Close();
         var s = S.Clone();
         s.Language = code;
         ApplySettings(s, relocate: false);
