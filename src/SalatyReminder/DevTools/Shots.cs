@@ -69,6 +69,48 @@ static class Shots
                 mb.Save(Path.Combine(dir, $"menu-{lang}.png"), System.Drawing.Imaging.ImageFormat.Png);
             }
             menu.Close();
+
+            var hover = app.HoverForShot(true);
+            SaveOffscreen(hover, Path.Combine(dir, $"hover-{lang}.png"));
+            hover.Hide();
+
+        }
+
+        // Pinned-clock scenes come last, after every settings capture: those read the real screen, and a card
+        // still on screen would show up in them.
+        foreach (var lang in new[] { "en", "ar" })
+        {
+            var s = new AppSettings
+            {
+                Language = lang, AutoLocation = false, Latitude = 30.0444, Longitude = 31.2357,
+                LocationName = lang == "ar" ? "القاهرة، مصر" : "Cairo, Egypt", Method = "Egyptian",
+            };
+            L.Ar = lang == "ar";
+            // A Ramadan afternoon (16 Ramadan 1447): the Iftar countdown on the card and the widget.
+            Clock.Pinned = new DateTime(2026, 3, 5, 14, 10, 0);
+            var ramadan = new SalatyApp(s);
+            var rc = new PrayerCard(ramadan);
+            rc.ShowNear(new Rectangle(Screen.PrimaryScreen!.WorkingArea.Right - 300, Screen.PrimaryScreen.WorkingArea.Bottom, 100, 40));
+            SaveOffscreen(rc, Path.Combine(dir, $"card-ramadan-{lang}.png"));
+            rc.Close();
+            rc.Dispose();
+            if (ramadan.RamadanTarget(Clock.Now) is { } r)
+                WidgetStrip(Path.Combine(dir, $"widget-ramadan-{lang}.png"), $"{r.label} {L.Time(r.at, false)}", L.Countdown(r.at - Clock.Now), false, lang == "ar");
+            var rh = ramadan.HoverForShot(true);
+            SaveOffscreen(rh, Path.Combine(dir, $"hover-ramadan-{lang}.png"));
+            rh.Hide();
+
+            // The Day of Arafah 1447: occasions and fasting days on the calendar.
+            Clock.Pinned = new DateTime(2026, 5, 26, 10, 0, 0);
+            var arafah = new SalatyApp(s);
+            var ac = new PrayerCard(arafah);
+            ac.ShowNear(new Rectangle(Screen.PrimaryScreen!.WorkingArea.Right - 300, Screen.PrimaryScreen.WorkingArea.Bottom, 100, 40));
+            SaveOffscreen(ac, Path.Combine(dir, $"card-arafah-{lang}.png"));
+            ac.OpenCalendarForShot();
+            SaveOffscreen(ac, Path.Combine(dir, $"calendar-occasions-{lang}.png"));
+            ac.Close();
+            ac.Dispose();
+            Clock.Pinned = null;
         }
         return 0;
     }
@@ -112,6 +154,14 @@ static class Shots
         // DWMWA_EXTENDED_FRAME_BOUNDS: the visible frame, without the invisible resize border.
         if (Native.DwmGetWindowAttribute(f.Handle, 9, out var wr, System.Runtime.InteropServices.Marshal.SizeOf<Native.RECT>()) == 0)
             r = Rectangle.FromLTRB(wr.Left, wr.Top, wr.Right, wr.Bottom);
+        // Never save a capture of something else: every probe point must be this window (or a child of it).
+        foreach (var pt in new[] { new Point(r.Left + 8, r.Top + 8), new Point(r.Right - 8, r.Top + 8), new Point(r.Left + r.Width / 2, r.Top + r.Height / 2),
+                                   new Point(r.Left + 8, r.Bottom - 8), new Point(r.Right - 8, r.Bottom - 8) })
+            if (Native.GetAncestor(Native.WindowFromPoint(pt), 2 /* GA_ROOT */) != f.Handle)
+            {
+                Console.Error.WriteLine($"Skipped {Path.GetFileName(path)}: the window was covered.");
+                return;
+            }
         using var bmp = new Bitmap(r.Width, r.Height);
         using (var g = Graphics.FromImage(bmp)) g.CopyFromScreen(r.Location, Point.Empty, r.Size);
         bmp.Save(path, System.Drawing.Imaging.ImageFormat.Png);

@@ -7,7 +7,8 @@ sealed class PrayerCard : Form
 {
     const int W = 340, HeaderH = 192;
     float RowH => app.S.ShowSunnah ? 46 : 38;
-    int H => (int)(258 + RowH * 6 + 92);
+    float NightH => app.S.ShowNightTimes ? 22 : 0;
+    int H => (int)(258 + RowH * 6 + NightH + 92);
 
     readonly SalatyApp app;
     readonly System.Windows.Forms.Timer tick = new() { Interval = 1000 };
@@ -109,7 +110,7 @@ sealed class PrayerCard : Form
     bool activated;
     readonly CalendarPanel cal = new() { Visible = false };
 
-    DateOnly Today => DateOnly.FromDateTime(DateTime.Now);
+    DateOnly Today => DateOnly.FromDateTime(Clock.Now);
     DateOnly Viewing => viewDate ?? Today;
 
     void Go(int days) => SetView(Viewing.AddDays(days));
@@ -127,7 +128,7 @@ sealed class PrayerCard : Form
         cal.RightToLeft = L.Ar ? RightToLeft.Yes : RightToLeft.No;
         var pref = cal.Preferred;
         cal.Location = new Point((Width - pref.Width) / 2, rDate.Bottom + Px(4));
-        cal.Open(Viewing, app.S.HijriAdjust, dark);
+        cal.Open(Viewing, app.S.HijriAdjust, dark, app.S.ShowOccasions);
     }
 
     public void OpenCalendarForShot() { Refresh(); ToggleCalendar(); }
@@ -164,7 +165,7 @@ sealed class PrayerCard : Form
     protected override void OnVisibleChanged(EventArgs e)
     {
         base.OnVisibleChanged(e);
-        if (!Visible) { tick.Stop(); LastHidden = DateTime.Now; }
+        if (!Visible) { tick.Stop(); LastHidden = Clock.Now; }
     }
 
     /// <summary>Mirrors a left-to-right layout box for Arabic.</summary>
@@ -187,7 +188,7 @@ sealed class PrayerCard : Form
     {
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
-        var now = DateTime.Now;
+        var now = Clock.Now;
         var st = app.S;
         var today = app.Today;
         if (today == null) return;
@@ -223,13 +224,31 @@ sealed class PrayerCard : Form
 
         var (next, at) = app.GetNext(now);
         var (prev, prevAt) = app.GetPrevious(now);
-        Draw(g, L.T("NextPrayer"), fSmall, soft, Box(16, 46, 200, 20));
-        Draw(g, L.PrayerName(next, at), fBig, white, Box(14, 64, 190, 44));
-        Draw(g, L.Time(at, st.Use24h), fTime, white, Box(170, 68, W - 186, 40), far: true);
-        Draw(g, L.Countdown(at - now), fCount, Art.Gold, Box(16, 110, W - 32, 22));
+        string headLabel = L.T("NextPrayer"), headName = L.PrayerName(next, at), headAt = L.Time(at, st.Use24h);
+        string fromLabel = $"{L.PrayerName(prev, prevAt)} {L.Time(prevAt, st.Use24h)}", toLabel = $"{L.PrayerName(next, at)} {L.Time(at, st.Use24h)}";
+        DateTime from = prevAt, to = at;
+        // Ramadan: the header counts down to Iftar by day (the bar is the fast, Fajr to Maghrib) and to the end of Suhoor by night.
+        if (app.RamadanTarget(now) is { } r)
+        {
+            bool iftar = r.at == today[Prayer.Maghrib];
+            int rd = Ramadan.Day(DateOnly.FromDateTime(r.at), st.HijriAdjust);
+            headLabel = L.F("RamadanDay", rd);
+            headName = r.label;
+            headAt = L.Time(r.at, st.Use24h);
+            to = r.at;
+            from = iftar ? today[Prayer.Fajr] : now < today[Prayer.Fajr] ? today[Prayer.Isha].AddDays(-1) : today[Prayer.Isha];
+            var fromP = iftar ? Prayer.Fajr : Prayer.Isha;
+            var toP = iftar ? Prayer.Maghrib : Prayer.Fajr;
+            fromLabel = $"{L.PrayerName(fromP, from)} {L.Time(from, st.Use24h)}";
+            toLabel = $"{L.PrayerName(toP, to)} {L.Time(to, st.Use24h)}";
+        }
+        Draw(g, headLabel, fSmall, soft, Box(16, 46, 200, 20));
+        Draw(g, headName, fBig, white, Box(14, 64, 190, 44));
+        Draw(g, headAt, fTime, white, Box(170, 68, W - 186, 40), far: true);
+        Draw(g, L.Countdown(to - now), fCount, Art.Gold, Box(16, 110, W - 32, 22));
 
-        // Progress from the previous prayer to the next one.
-        double frac = Math.Clamp((now - prevAt).TotalSeconds / Math.Max(1, (at - prevAt).TotalSeconds), 0, 1);
+        // Progress from the previous prayer to the next one (or across the fast in Ramadan).
+        double frac = Math.Clamp((now - from).TotalSeconds / Math.Max(1, (to - from).TotalSeconds), 0, 1);
         var bar = new RectangleF(Px(16), Px(142), Width - Px(32), Px(6));
         using (var track = Art.RoundRect(bar, Px(3)))
         using (var tb = new SolidBrush(Color.FromArgb(55, 255, 255, 255)))
@@ -239,8 +258,8 @@ sealed class PrayerCard : Form
         using (var fp = Art.RoundRect(fill, Px(3)))
         using (var fb = new SolidBrush(Art.Gold))
             g.FillPath(fb, fp);
-        Draw(g, $"{L.PrayerName(prev, prevAt)} {L.Time(prevAt, st.Use24h)}", fTiny, soft, Box(16, 154, 150, 20));
-        Draw(g, $"{L.PrayerName(next, at)} {L.Time(at, st.Use24h)}", fTiny, soft, Box(W - 166, 154, 150, 20), far: true);
+        Draw(g, fromLabel, fTiny, soft, Box(16, 154, 150, 20));
+        Draw(g, toLabel, fTiny, soft, Box(W - 166, 154, 150, 20), far: true);
 
         // ---- Date navigator: ‹ date (click for calendar) › ----
         var day = Viewing;
@@ -257,7 +276,9 @@ sealed class PrayerCard : Form
         var top = new Rectangle(rDate.X, rDate.Y, rDate.Width, rDate.Height / 2);
         var bottom = new Rectangle(rDate.X, rDate.Y + rDate.Height / 2, rDate.Width, rDate.Height / 2);
         Draw(g, L.Gregorian(dayDt), isToday ? fSmall : fSmallB, fg, top, center: true);
-        Draw(g, L.Hijri(dayDt, st.HijriAdjust), fSmall, accent, bottom, center: true);
+        // The viewed day's occasion or sunnah fast, beside its Hijri date.
+        string dayLabel = st.ShowOccasions ? L.DayLabel(Occasions.For(day, st.HijriAdjust), day.DayOfWeek) : "";
+        Draw(g, dayLabel.Length > 0 ? $"{L.HijriShort(dayDt, st.HijriAdjust)}, {dayLabel}" : L.Hijri(dayDt, st.HijriAdjust), fSmall, accent, bottom, center: true);
 
         if (isToday)
         {
@@ -274,6 +295,7 @@ sealed class PrayerCard : Form
 
         // ---- Six times for the viewed day ----
         bool nextIsTomorrow = at.Date > now.Date;
+        bool ramadanDay = st.RamadanMode && Ramadan.IsRamadan(day, st.HijriAdjust);
         float y = 258;
         foreach (var p in Enum.GetValues<Prayer>())
         {
@@ -295,14 +317,27 @@ sealed class PrayerCard : Form
             var f = isNext ? fRowB : fRow;
             // Each prayer in full colour; passed ones fade, with the horizon in the row's quiet tone.
             Art.PrayerGlyph(g, p, Box(24, y + rh / 2 - 10, 20, 20), dark, past, past ? faint : dim);
-            if (st.ShowSunnah && L.Sunnah(p).Length > 0)
+            // In Ramadan, Fajr's line gives Imsak and Maghrib's says it is Iftar.
+            string sub = ramadanDay && p == Prayer.Fajr ? L.F("Imsak", L.Time(Ramadan.Imsak(t), st.Use24h))
+                       : ramadanDay && p == Prayer.Maghrib ? L.T("Iftar")
+                       : L.Sunnah(p);
+            if (st.ShowSunnah && sub.Length > 0)
             {
                 Draw(g, L.PrayerName(p, t), f, c, Box(56, y + 5, 170, 20));
-                Draw(g, L.Sunnah(p), fTiny, past ? faint : dim, Box(56, y + 24, 200, 16));
+                Draw(g, sub, fTiny, past ? faint : ramadanDay && p is Prayer.Fajr or Prayer.Maghrib ? Art.GoldText(dark) : dim, Box(56, y + 24, 200, 16));
             }
             else Draw(g, L.PrayerName(p, t), f, c, Box(56, y, 160, rh));
             Draw(g, L.Time(t, st.Use24h), f, c, Box(220, y, W - 244, rh), far: true);
             y += rh;
+        }
+
+        // The night after the viewed day: its middle and the start of its last third.
+        if (st.ShowNightTimes)
+        {
+            var night = app.NightAfter(day);
+            Draw(g, $"{L.F("Midnight", L.Time(night.Midnight, st.Use24h))}     {L.F("LastThird", L.Time(night.LastThird, st.Use24h))}",
+                fTiny, dim, Box(18, y + 2, W - 36, 20), center: true);
+            y += NightH;
         }
 
         Draw(g, L.MethodName(Methods.Get(st.Method)) + (st.HanafiAsr ? ", " + L.T("AsrHanafi") : ""), fTiny, faint, Box(18, y + 6, W - 36, 20), center: true);

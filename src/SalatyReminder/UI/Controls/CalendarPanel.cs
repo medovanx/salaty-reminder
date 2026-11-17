@@ -6,6 +6,8 @@ namespace SalatyReminder.UI.Controls;
 /// <summary>
 /// A month grid drawn in the card's style, with the Hijri day under each Gregorian day.
 /// Clicking the title zooms out to a grid of months, then to a grid of years, to jump far quickly.
+/// Islamic occasions get a gold mark and sunnah fasting days a teal one; the day under the mouse (or the
+/// selected day) is named under the grid.
 /// </summary>
 sealed class CalendarPanel : Control
 {
@@ -14,7 +16,7 @@ sealed class CalendarPanel : Control
     DateOnly month;          // first day of the shown month
     DateOnly selected;
     int hijriAdjust;
-    bool dark;
+    bool dark, occasions;
     Rectangle rPrev, rNext, rTitle, rToday;
     readonly Dictionary<Rectangle, DateOnly> cells = [];
     readonly Dictionary<Rectangle, int> picks = [];   // month (1-12) or year cells in the zoomed-out views
@@ -36,10 +38,11 @@ sealed class CalendarPanel : Control
     float S => DeviceDpi / 96f;
     int Px(float v) => (int)Math.Round(v * S);
 
-    public Size Preferred => new(Px(300), Px(318));
+    public Size Preferred => new(Px(300), Px(occasions ? 338 : 318));
 
-    public void Open(DateOnly date, int hijri, bool isDark)
+    public void Open(DateOnly date, int hijri, bool isDark, bool showOccasions)
     {
+        occasions = showOccasions;
         selected = date;
         month = new DateOnly(date.Year, date.Month, 1);
         hijriAdjust = hijri;
@@ -118,7 +121,7 @@ sealed class CalendarPanel : Control
     {
         if (rPrev.Contains(e.Location)) Shift(L.Ar ? 1 : -1);
         else if (rNext.Contains(e.Location)) Shift(L.Ar ? -1 : 1);
-        else if (rToday.Contains(e.Location)) DatePicked?.Invoke(DateOnly.FromDateTime(DateTime.Now));
+        else if (rToday.Contains(e.Location)) DatePicked?.Invoke(DateOnly.FromDateTime(Clock.Now));
         else if (rTitle.Contains(e.Location)) ZoomOut();
         else if (view == View.Days) { foreach (var (r, d) in cells) if (r.Contains(e.Location)) { DatePicked?.Invoke(d); return; } }
         else foreach (var (r, v) in picks) if (r.Contains(e.Location)) { Pick(v); return; }
@@ -236,7 +239,7 @@ sealed class CalendarPanel : Control
         }
 
         // Day grid
-        var today = DateOnly.FromDateTime(DateTime.Now);
+        var today = DateOnly.FromDateTime(Clock.Now);
         int offset = ((int)month.DayOfWeek - (int)firstDow + 7) % 7;
         var start = month.AddDays(-offset);
         int top = gridTop + Px(20);
@@ -265,6 +268,35 @@ sealed class CalendarPanel : Control
                 new Rectangle(r.X, r.Y + Px(2), r.Width, Px(20)), dc, center);
             TextRenderer.DrawText(g, HijriDay(dt), fHijri, new Rectangle(r.X, r.Y + Px(20), r.Width, Px(13)),
                 Color.FromArgb(inMonth || isSel ? 255 : 150, hc), center);
+
+            // A dot in the cell's top corner, kept for the days worth spotting at a glance: the major occasions
+            // in gold, the white days and Tasu'a/Ashura fasts in teal. Weekly fasts and the ten-day seasons would
+            // dot half the month, so they are only named (under the grid) when the day is hovered or selected.
+            if (occasions && Occasions.For(d, hijriAdjust) is var info && (info.IsMajor || info.Fast is FastKind.WhiteDays or FastKind.Ashura))
+            {
+                Color dot = isSel ? Color.White : info.IsMajor ? Art.GoldText(dark) : accent;
+                if (!inMonth) dot = Color.FromArgb(110, dot);
+                float ds = Math.Max(4f, 5f * S);
+                float dx = rtl ? inner.Left + Px(5) : inner.Right - Px(5) - ds;
+                using var db = new SolidBrush(dot);
+                g.FillEllipse(db, dx, inner.Top + Px(4), ds, ds);
+            }
+        }
+
+        // Name of the day under the mouse, or of the selected day.
+        if (occasions)
+        {
+            DateOnly? shown = null;
+            foreach (var (r, d) in cells) if (r.Contains(hoverPt)) shown = d;
+            shown ??= selected;
+            var info = Occasions.For(shown.Value, hijriAdjust);
+            string label = L.DayLabel(info, shown.Value.DayOfWeek);
+            if (label.Length > 0)
+            {
+                string when = shown.Value.ToDateTime(TimeOnly.MinValue).ToString("d MMMM", culture);
+                TextRenderer.DrawText(g, $"{when}, {label}", fSub, new Rectangle(Px(8), top + 6 * ch + Px(2), Width - Px(16), Px(18)),
+                    info.Occasion != null ? Art.GoldText(dark) : accent, center | TextFormatFlags.EndEllipsis);
+            }
         }
 
         DrawToday(g, accent, center);
@@ -293,7 +325,7 @@ sealed class CalendarPanel : Control
 
         using var fItem = new Font("Segoe UI", 10f);
         using var fItemB = new Font("Segoe UI Semibold", 10f);
-        var now = DateTime.Now;
+        var now = Clock.Now;
         int left = Px(10), top = Px(52), cols = 3, rows = 4;
         int cw = (Width - Px(20)) / cols, ch = (Height - Px(34) - top) / rows;
         for (int i = 0; i < 12; i++)

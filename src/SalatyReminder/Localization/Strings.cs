@@ -95,6 +95,54 @@ public static class L
         ["LocFailed"] = ("Couldn't detect your location. Still using {0}.", "تعذر تحديد موقعك. ما زال يتم استخدام {0}."),
         ["LocUpdated"] = ("Location: {0}", "الموقع: {0}"),
         ["Locating"] = ("Locating…", "جارٍ تحديد الموقع…"),
+        // Ramadan
+        ["Iftar"] = ("Iftar", "الإفطار"),
+        ["SuhoorEnds"] = ("Suhoor ends", "نهاية السحور"),
+        ["Imsak"] = ("Imsak {0}", "الإمساك {0}"),
+        ["RamadanDay"] = ("Ramadan, day {0}", "رمضان، اليوم {0}"),
+        ["FastingDay"] = ("Fasting", "الصيام"),
+        ["IftarTitle"] = ("Iftar time: Maghrib", "حان موعد الإفطار: المغرب"),
+        ["SuhoorTitle"] = ("Suhoor: Fajr in {0} minutes", "السحور: الفجر بعد {0} دقيقة"),
+        ["SuhoorBody"] = ("Imsak at {0}, Fajr at {1}", "الإمساك {0}، الفجر {1}"),
+        // Night
+        ["Midnight"] = ("Midnight {0}", "منتصف الليل {0}"),
+        ["LastThird"] = ("Last third {0}", "الثلث الأخير {0}"),
+        // Friday and adhkar
+        ["KahfTitle"] = ("It's Friday: read Surat Al-Kahf", "اليوم الجمعة: اقرأ سورة الكهف"),
+        ["KahfBody"] = ("And send plenty of salawat on the Prophet ﷺ.", "وأكثر من الصلاة على النبي ﷺ."),
+        ["JumuahTitle"] = ("Jumu'ah in {0} minutes", "صلاة الجمعة بعد {0} دقيقة"),
+        ["JumuahBody"] = ("Go early. Dhuhr at {0}.", "بكّر إليها. الظهر {0}."),
+        ["MorningAdhkar"] = ("Morning adhkar", "أذكار الصباح"),
+        ["EveningAdhkar"] = ("Evening adhkar", "أذكار المساء"),
+        ["AdhkarBody"] = ("A few minutes of remembrance.", "دقائق من ذكر الله."),
+        ["FastTomorrowTitle"] = ("Tomorrow: {0}", "غدًا: {0}"),
+        ["FastTomorrowBody"] = ("A sunnah fast. Intend it tonight and have suhoor.", "صيام سنة. انوِه الليلة وتسحّر."),
+        // Settings page
+        ["Extras"] = ("Extras", "إضافات"),
+        ["ExtrasTitle"] = ("Ramadan and sunnah", "رمضان والسنن"),
+        ["RamadanMode"] = ("Ramadan mode: Iftar and Suhoor countdowns", "وضع رمضان: العد التنازلي للإفطار والسحور"),
+        ["ShowOccasions"] = ("Occasions and fasting days on the calendar", "المناسبات وأيام الصيام في التقويم"),
+        ["FastingReminders"] = ("Remind me the evening before a sunnah fast", "تذكيري مساء اليوم السابق لصيام السنة"),
+        ["FridayReminders"] = ("Friday: Surat Al-Kahf and Jumu'ah reminders", "الجمعة: تذكير بسورة الكهف وصلاة الجمعة"),
+        ["AdhkarReminders"] = ("Morning and evening adhkar reminders", "تذكير بأذكار الصباح والمساء"),
+        ["ShowNightTimes"] = ("Show midnight and the last third of the night", "عرض منتصف الليل والثلث الأخير"),
+        // Occasions
+        ["IslamicNewYear"] = ("Islamic New Year", "رأس السنة الهجرية"),
+        ["Tasua"] = ("Tasu'a", "تاسوعاء"),
+        ["Ashura"] = ("Ashura", "عاشوراء"),
+        ["RamadanStart"] = ("First day of Ramadan", "أول أيام رمضان"),
+        ["LastTenNights"] = ("Last ten nights", "العشر الأواخر"),
+        ["EidAlFitr"] = ("Eid al-Fitr", "عيد الفطر"),
+        ["FirstTenDhulHijjah"] = ("First ten days of Dhu al-Hijjah", "العشر الأوائل من ذي الحجة"),
+        ["Arafah"] = ("Day of Arafah", "يوم عرفة"),
+        ["EidAlAdha"] = ("Eid al-Adha", "عيد الأضحى"),
+        ["Tashreeq"] = ("Days of Tashreeq", "أيام التشريق"),
+        ["FastMonday"] = ("Monday fast", "صيام الاثنين"),
+        ["FastThursday"] = ("Thursday fast", "صيام الخميس"),
+        ["FastWhiteDays"] = ("White days fast", "صيام الأيام البيض"),
+        ["FastAshura"] = ("Fast of Tasu'a and Ashura", "صيام تاسوعاء وعاشوراء"),
+        ["FastArafah"] = ("Fast of Arafah", "صيام يوم عرفة"),
+        ["FastSixOfShawwal"] = ("Six days of Shawwal", "صيام ست من شوال"),
     };
 
     public static string T(string key) => D.TryGetValue(key, out var v) ? (Ar ? v.ar : v.en) : key;
@@ -125,6 +173,17 @@ public static class L
         Prayer.Maghrib => Ar ? "السنة: ركعتان بعد الفرض" : "Sunnah: 2 after",
         Prayer.Isha => Ar ? "السنة: ركعتان بعد، ثم الوتر" : "Sunnah: 2 after, then Witr",
         _ => "",
+    };
+
+    /// <summary>The occasion's name, or the fast's when the day only has a fast; empty for an ordinary day.</summary>
+    public static string DayLabel(DayInfo info, DayOfWeek dow) =>
+        info.Occasion is { } o ? T(o.ToString()) : FastLabel(info.Fast, dow);
+
+    public static string FastLabel(FastKind f, DayOfWeek dow) => f switch
+    {
+        FastKind.MondayThursday => T(dow == DayOfWeek.Monday ? "FastMonday" : "FastThursday"),
+        FastKind.None => "",
+        _ => T("Fast" + f),
     };
 
     public static string MethodName(MethodDef m) => Ar ? m.NameAr : m.NameEn;
@@ -161,6 +220,13 @@ public static class L
         if (x < cal.MinSupportedDateTime || x > cal.MaxSupportedDateTime) return "";
         int y = cal.GetYear(x), m = cal.GetMonth(x), day = cal.GetDayOfMonth(x);
         return Ar ? $"{day} {HijriAr[m - 1]} {y} هـ" : $"{day} {HijriEn[m - 1]} {y} AH";
+    }
+
+    /// <summary>"9 Dhu al-Hijjah", without the year, for a line that also names the day's occasion.</summary>
+    public static string HijriShort(DateTime d, int adjustDays)
+    {
+        if (HijriDate.From(DateOnly.FromDateTime(d), adjustDays) is not { } h) return "";
+        return $"{h.Day} {(Ar ? HijriAr : HijriEn)[h.Month - 1]}";
     }
 
     public static string Gregorian(DateTime d) => d.ToString("dddd، d MMMM yyyy", Culture).Replace("،", Ar ? "،" : ",");

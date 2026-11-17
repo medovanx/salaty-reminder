@@ -8,6 +8,8 @@ static class Art
     public static readonly Color Gold = Color.FromArgb(246, 200, 92);
     public static readonly Color TealLight = Color.FromArgb(24, 150, 122);
     public static readonly Color TealDark = Color.FromArgb(9, 62, 58);
+    /// <summary>Gold for text: the brand gold on dark, a deeper amber that keeps its contrast on light.</summary>
+    public static Color GoldText(bool dark) => dark ? Gold : Color.FromArgb(166, 112, 0);
 
     // Windows icon font: Segoe Fluent Icons (Win11) or Segoe MDL2 Assets (Win10) share these code points.
     public const string IconSettings = "\uE713", IconLocation = "\uE707", IconCalendar = "\uE787",

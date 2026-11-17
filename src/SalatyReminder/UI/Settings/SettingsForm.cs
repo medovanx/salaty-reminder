@@ -29,6 +29,8 @@ sealed class SettingsForm : Form
     readonly ThemedNumber numEarly = Num(1, 120, 0);
     readonly ThemedText txtAdhan = new() { Width = 260 };
     readonly ThemedButton btnBrowse = new() { AutoSize = true, Height = 27 }, btnTest = new() { AutoSize = true, Height = 27 };
+    // Ramadan and sunnah
+    readonly ToggleSwitch tglRamadan = new(), tglOccasions = new(), tglFasting = new(), tglFriday = new(), tglAdhkar = new(), tglNight = new();
     // Updates
     readonly ToggleSwitch tglAutoCheck = new(), tglAutoInstall = new();
     readonly ThemedButton btnCheck = new() { AutoSize = true, Height = 30 };
@@ -66,6 +68,7 @@ sealed class SettingsForm : Form
         BuildLocation();
         BuildCalculation();
         BuildReminders();
+        BuildExtras();
         BuildUpdates();
 
         nav = new NavList(pages.Select(p => (p.glyph, p.title)).ToArray(), t) { Dock = L.Ar ? DockStyle.Right : DockStyle.Left, Width = 210 };
@@ -234,6 +237,23 @@ sealed class SettingsForm : Form
         };
     }
 
+    void BuildExtras()
+    {
+        tglRamadan.Checked = s.RamadanMode;
+        tglOccasions.Checked = s.ShowOccasions;
+        tglFasting.Checked = s.FastingReminders;
+        tglFriday.Checked = s.FridayReminders;
+        tglAdhkar.Checked = s.AdhkarReminders;
+        tglNight.Checked = s.ShowNightTimes;
+        AddPage("", L.T("Extras"), Card(L.T("ExtrasTitle"), "",
+            Row(L.T("RamadanMode"), tglRamadan),
+            Row(L.T("ShowOccasions"), tglOccasions),
+            Row(L.T("FastingReminders"), tglFasting),
+            Row(L.T("FridayReminders"), tglFriday),
+            Row(L.T("AdhkarReminders"), tglAdhkar),
+            Row(L.T("ShowNightTimes"), tglNight)));
+    }
+
     void BuildUpdates()
     {
         tglAutoCheck.Checked = s.AutoCheckUpdates;
@@ -324,6 +344,12 @@ sealed class SettingsForm : Form
         s.ShowSunnah = tglSunnah.Checked;
         s.WidgetSide = cmbSide.SelectedIndex == 1 ? "Left" : "Right";
         s.WidgetOffset = (int)numOffset.Value;
+        s.RamadanMode = tglRamadan.Checked;
+        s.ShowOccasions = tglOccasions.Checked;
+        s.FastingReminders = tglFasting.Checked;
+        s.FridayReminders = tglFriday.Checked;
+        s.AdhkarReminders = tglAdhkar.Checked;
+        s.ShowNightTimes = tglNight.Checked;
         s.AutoCheckUpdates = tglAutoCheck.Checked;
         s.AutoInstallUpdates = tglAutoInstall.Checked;
         try { AppSettings.StartWithWindows = tglStartup.Checked; } catch { /* registry blocked */ }

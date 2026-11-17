@@ -35,6 +35,7 @@ sealed class SalatyApp : ApplicationContext
 
     readonly HostWindow host;
     readonly TaskbarWidget widget = new();
+    readonly HoverCard hoverCard;
     ContextMenuStrip? menu;
     readonly System.Windows.Forms.Timer timer = new() { Interval = 1000 };
     /// <summary>Slides the widget's update bar while the end isn't known.</summary>
@@ -61,6 +62,7 @@ sealed class SalatyApp : ApplicationContext
         AppIcon = LoadIcon();
 
         host = new HostWindow(this);
+        hoverCard = new HoverCard(this);
         barTimer.Tick += (_, _) => { barPhase = (barPhase + 0.02f) % 1f; SyncWidgetBar(); };
 
         if (Headless) { Recompute(); return; }
@@ -69,9 +71,15 @@ sealed class SalatyApp : ApplicationContext
         if (Environment.GetCommandLineArgs().Contains("--test-toast"))
             Toast.Show(L.F("NotifTitle", L.PrayerName(Prayer.Fajr, DateTime.Now)), $"4:40 AM, {S.LocationName}", ShowCard);
 
-        widget.Clicked += () => { StopAlert(); ToggleCard(); };
+        widget.Clicked += () => { hoverCard.Cancel(); StopAlert(); ToggleCard(); };
+        widget.HoverChanged += over =>
+        {
+            if (!over || card?.Visible == true || menu != null) { hoverCard.Cancel(); return; }
+            hoverCard.ShowSoon(widget.ScreenBounds, () => card?.Visible == true || menu != null);
+        };
         widget.RightClicked += () =>
         {
+            hoverCard.Cancel();
             Native.SetForegroundWindow(host.Handle);
             // A fresh menu each time: it reflects the current language, theme and update state.
             var m = BuildMenu();
@@ -120,12 +128,12 @@ sealed class SalatyApp : ApplicationContext
 
     void Recompute()
     {
-        var date = DateOnly.FromDateTime(DateTime.Now);
+        var date = DateOnly.FromDateTime(Clock.Now);
         if (Today?.Date != date) fired.Clear();
         var m = Methods.Get(S.Method);
         Today = PrayerCalc.Compute(date, S.Latitude, S.Longitude, m, S.HanafiAsr);
         tomorrow = PrayerCalc.Compute(date.AddDays(1), S.Latitude, S.Longitude, m, S.HanafiAsr);
-        UpdateWidget(DateTime.Now);
+        UpdateWidget(Clock.Now);
         if (card?.Visible == true) card.Invalidate();
     }
 
@@ -160,6 +168,29 @@ sealed class SalatyApp : ApplicationContext
         return (Prayer.Isha, Today![Prayer.Isha].AddDays(-1));
     }
 
+    /// <summary>
+    /// In Ramadan (with Ramadan mode on): by day the countdown to Iftar, after Isha and before Fajr the countdown
+    /// to the end of Suhoor at Fajr. Null at other times, between Maghrib and Isha, and outside Ramadan.
+    /// </summary>
+    public (string label, DateTime at)? RamadanTarget(DateTime now)
+    {
+        if (!S.RamadanMode || Today == null || tomorrow == null) return null;
+        var date = DateOnly.FromDateTime(now);
+        bool today = Ramadan.IsRamadan(date, S.HijriAdjust);
+        if (today && now < Today[Prayer.Fajr]) return (L.T("SuhoorEnds"), Today[Prayer.Fajr]);
+        if (today && now < Today[Prayer.Maghrib]) return (L.T("Iftar"), Today[Prayer.Maghrib]);
+        if (now >= Today[Prayer.Isha] && Ramadan.IsRamadan(date.AddDays(1), S.HijriAdjust)) return (L.T("SuhoorEnds"), tomorrow[Prayer.Fajr]);
+        return null;
+    }
+
+    /// <summary>Midnight and the last third of the night that follows <paramref name="date"/>'s Maghrib.</summary>
+    public NightTimes NightAfter(DateOnly date)
+    {
+        var day = Today?.Date == date ? Today : TimesFor(date);
+        var next = Today?.Date == date && tomorrow != null ? tomorrow : TimesFor(date.AddDays(1));
+        return NightTimes.Between(day[Prayer.Maghrib], next[Prayer.Fajr]);
+    }
+
     void UpdateWidget(DateTime now)
     {
         if (Today == null) return;
@@ -172,16 +203,21 @@ sealed class SalatyApp : ApplicationContext
         else
         {
             var (p, at) = GetNext(now);
+            string line1 = $"{L.PrayerName(p, at)} {L.Time(at, S.Use24h)}";
+            // Ramadan: Iftar by day, the end of Suhoor by night.
+            if (RamadanTarget(now) is { } r) { line1 = $"{r.label} {L.Time(r.at, S.Use24h)}"; at = r.at; }
             // While an update runs the second line says so, with the bar under it.
             string line2 = !UpdateBusy ? L.Countdown(at - now)
                 : UpdateFraction is { } f && f < 1 ? L.F("WidgetUpdating", L.Ltr($"{f * 100:0}%"))
                 : L.T(installing ? "WidgetInstalling" : "WidgetChecking");
-            widget.SetContent($"{L.PrayerName(p, at)} {L.Time(at, S.Use24h)}", line2, false, L.Ar);
+            widget.SetContent(line1, line2, false, L.Ar);
         }
     }
 
     void CheckReminders(DateTime now)
     {
+        CheckExtraReminders(now);
+        bool ramadanToday = S.RamadanMode && Ramadan.IsRamadan(Today!.Date, S.HijriAdjust);
         foreach (var p in PrayerCalc.FivePrayers)
         {
             var t = Today![p];
@@ -195,11 +231,51 @@ sealed class SalatyApp : ApplicationContext
             if (now >= t && now < t.AddMinutes(3) && fired.Add(Key("A", p)))
             {
                 if (S.NotifyAtTime)
-                    Toast.Show(L.F("NotifTitle", name), $"{L.Time(t, S.Use24h)}, {S.LocationName}",
+                    Toast.Show(ramadanToday && p == Prayer.Maghrib ? L.T("IftarTitle") : L.F("NotifTitle", name), $"{L.Time(t, S.Use24h)}, {S.LocationName}",
                         () => { StopAlert(); ShowCard(); }, silent: S.PlayAdhan);
                 if (S.FlashWidget) { flashPrayer = p; flashUntil = now.AddMinutes(10); }
                 if (S.PlayAdhan) PlayAdhan(S.AdhanFile);
             }
+        }
+    }
+
+    /// <summary>
+    /// Reminders beyond the prayers: Suhoor in Ramadan, Friday's Al-Kahf and Jumu'ah, the morning and evening
+    /// adhkar, and the evening before a sunnah fast. Each fires once, within three minutes of its time.
+    /// </summary>
+    void CheckExtraReminders(DateTime now)
+    {
+        var t = Today!;
+        void Once(string key, DateTime at, string title, string body)
+        {
+            if (now >= at && now < at.AddMinutes(3) && fired.Add($"{t.Date:yyyy-MM-dd}:{key}"))
+                Toast.Show(title, body, ShowCard);
+        }
+        string Time(DateTime x) => L.Time(x, S.Use24h);
+
+        if (S.RamadanMode && Ramadan.IsRamadan(t.Date, S.HijriAdjust))
+        {
+            const int suhoor = 45;
+            Once("Suhoor", t[Prayer.Fajr].AddMinutes(-suhoor), L.F("SuhoorTitle", suhoor),
+                L.F("SuhoorBody", Time(Ramadan.Imsak(t[Prayer.Fajr])), Time(t[Prayer.Fajr])));
+        }
+        if (S.FridayReminders && t.Date.DayOfWeek == DayOfWeek.Friday)
+        {
+            const int early = 45;
+            Once("Kahf", t[Prayer.Sunrise].AddHours(1), L.T("KahfTitle"), L.T("KahfBody"));
+            Once("Jumuah", t[Prayer.Dhuhr].AddMinutes(-early), L.F("JumuahTitle", early), L.F("JumuahBody", Time(t[Prayer.Dhuhr])));
+        }
+        if (S.AdhkarReminders)
+        {
+            Once("AdhkarAM", t[Prayer.Fajr].AddMinutes(20), L.T("MorningAdhkar"), L.T("AdhkarBody"));
+            Once("AdhkarPM", t[Prayer.Asr].AddMinutes(20), L.T("EveningAdhkar"), L.T("AdhkarBody"));
+        }
+        if (S.FastingReminders)
+        {
+            var next = t.Date.AddDays(1);
+            var info = Occasions.For(next, S.HijriAdjust);
+            if (info.Fast != FastKind.None)
+                Once("Fast", t[Prayer.Isha].AddMinutes(30), L.F("FastTomorrowTitle", L.FastLabel(info.Fast, next.DayOfWeek)), L.T("FastTomorrowBody"));
         }
     }
 
@@ -236,7 +312,7 @@ sealed class SalatyApp : ApplicationContext
     {
         StopAdhan();
         flashUntil = DateTime.MinValue;
-        UpdateWidget(DateTime.Now);
+        UpdateWidget(Clock.Now);
     }
 
     void ToggleCard()
@@ -313,7 +389,7 @@ sealed class SalatyApp : ApplicationContext
     {
         UpdateBusy = busy; UpdateFraction = fraction; UpdateStatus = status;
         barTimer.Enabled = busy && fraction == null && !Headless;
-        UpdateWidget(DateTime.Now);
+        UpdateWidget(Clock.Now);
         SyncWidgetBar();
         UpdateChanged?.Invoke();
     }
@@ -393,6 +469,9 @@ sealed class SalatyApp : ApplicationContext
         Toast.Show(L.T("AppName"), L.T("UpdateFailed"));
         Updater.OpenPage(rel.PageUrl);
     }
+
+    /// <summary>For --shots: the hover card, laid out off screen.</summary>
+    public HoverCard HoverForShot(bool dark) { hoverCard.ShowForShot(dark); return hoverCard; }
 
     /// <summary>For --shots: the widget's right-click menu, built and shown off screen.</summary>
     public ContextMenuStrip MenuForShot()

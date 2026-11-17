@@ -27,10 +27,13 @@ reminds you before it, plays the adhan, and speaks both English and Arabic.
 ## Features
 
 - **Lives in the taskbar.** Embedded right next to the notification area, like the weather widget. It hides with the taskbar in fullscreen apps, survives Explorer restarts and steps aside for other taskbar tools such as TrafficMonitor.
-- **Next prayer at a glance.** Name, time and a live countdown. Friday's Dhuhr shows as Jumu'ah.
+- **Next prayer at a glance.** Name, time and a live countdown. Friday's Dhuhr shows as Jumu'ah. Rest the mouse on the widget for a small card with all of today's times without clicking.
+- **Ramadan mode.** In Ramadan the widget and the card count down to Iftar by day and to the end of Suhoor by night, the card's bar follows the fast from Fajr to Maghrib, Fajr shows Imsak, and a Suhoor reminder comes 45 minutes before Fajr.
 - **Prayer card.** Click the widget for all six times with an icon for each in the colours of the sky, a progress bar from the last prayer to the next, the Gregorian and Hijri dates, and the sunnah rawatib for each prayer.
 - **Any day, not just today.** Step through days with the arrows, mouse wheel or arrow keys, or open the calendar (with Hijri days under each date) and jump anywhere: click its title to pick a month or a year directly.
-- **Reminders.** A notification at prayer time, an early heads-up a few minutes before, a flashing widget, and an optional adhan (a built-in recording or your own MP3/WAV/OGG file).
+- **Islamic occasions.** The calendar marks the Islamic New Year, Ashura, the start of Ramadan, both Eids and the Day of Arafah in gold and the white days in teal, and names every occasion and sunnah fast (Mondays, Thursdays, six of Shawwal, the first ten of Dhu al-Hijjah, the last ten nights) when you point at a day.
+- **Night times.** Midnight and the start of the last third of the night, for Qiyam, under the prayer list.
+- **Reminders.** A notification at prayer time, an early heads-up a few minutes before, a flashing widget, and an optional adhan (a built-in recording or your own MP3/WAV/OGG file). Also: Surat Al-Kahf on Friday morning and Jumu'ah 45 minutes ahead, the morning and evening adhkar, and (if you turn it on) a reminder the evening before a sunnah fast.
 - **Automatic location.** Uses Windows location, falls back to your IP address, or pick any city by name.
 - **Accurate times.** Astronomical calculation with nine methods (Egyptian General Authority, Muslim World League, Umm al-Qura, ISNA, Karachi, Kuwait, Qatar, Dubai, Diyanet), Shafi'i or Hanafi Asr, and correct daylight saving changes.
 - **English and Arabic.** Full right-to-left layout in Arabic; switch from Settings or the widget's right-click menu.
@@ -73,6 +76,17 @@ reminds you before it, plays the adhan, and speaks both English and Arabic.
   </tr>
 </table>
 
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/card-ramadan-en.png" width="300"><br><sub>Ramadan: the Iftar countdown</sub></td>
+    <td align="center"><img src="docs/screenshots/calendar-occasions-en.png" width="300"><br><sub>Occasions and fasting days</sub></td>
+    <td align="center">
+      <img src="docs/screenshots/hover-en.png"><br><sub>Hover the widget for today's times</sub><br><br>
+      <img src="docs/screenshots/widget-ramadan-en.png"><br><sub>The widget in Ramadan</sub>
+    </td>
+  </tr>
+</table>
+
 ## Install
 
 1. Download **`SalatyReminder.exe`** from the [latest release](https://github.com/medovanx/salaty-reminder/releases/latest).
@@ -86,9 +100,10 @@ The exe is self-contained, so you don't need to install .NET. Windows SmartScree
 | Action | What happens |
 | --- | --- |
 | Click the widget | Opens the prayer card (stops the adhan and flashing if active) |
-| Right-click the widget | Menu: times, refresh location, settings, check for updates, start with Windows, exit |
+| Rest the mouse on the widget | A small card with today's times, the Hijri date and any occasion |
+| Right-click the widget | Menu: times, refresh location, language, settings, check for updates, start with Windows, exit |
 | `<` and `>` in the card, mouse wheel, arrow keys | Previous or next day |
-| Click the date in the card | Calendar to jump to any day; click its month title to pick a month, then again to pick a year |
+| Click the date in the card | Calendar to jump to any day; click its month title to pick a month, then again to pick a year; point at a day to see its occasion |
 | `Home` / `Esc` | Back to today / close the card |
 | Launch the exe again | Opens the card of the running instance |
 
@@ -100,6 +115,7 @@ The exe is self-contained, so you don't need to install .NET. Windows SmartScree
 | Location | Detect automatically, or search for a city; latitude and longitude can be edited |
 | Calculation | Method, Asr (Standard or Hanafi), Hijri date adjustment of up to 2 days |
 | Reminders | Notification at prayer time, early reminder and its minutes, flash the widget, play the adhan and pick its file |
+| Extras | Ramadan mode, occasions and fasting days on the calendar, reminder before a sunnah fast, Friday reminders, adhkar reminders, midnight and the last third of the night |
 | Updates | Check automatically, install automatically, check now |
 
 Settings are stored in `%APPDATA%\SalatyReminder\settings.json`. There is no tray icon: notifications are Windows toasts, and the app registers its name and icon for them under `HKCU\Software\Classes\AppUserModelId\medovanx.SalatyReminder`.
@@ -129,6 +145,7 @@ Choose a city manually and turn off update checks for a fully offline app. Praye
 salaty-reminder/
 ├── src/
 │   ├── SalatyReminder.Core/        Prayer-time maths, no Windows or UI dependencies
+│   │   ├── Islamic/                Hijri dates, occasions and fasting days, Ramadan and night times
 │   │   └── Prayers/                PrayerCalc, calculation methods, day times
 │   └── SalatyReminder/             The Windows app
 │       ├── Assets/                 Icon and built-in adhan
@@ -144,7 +161,7 @@ salaty-reminder/
 │           ├── Styling/            Theme colours and drawing helpers
 │           └── Taskbar/            The widget inside the taskbar
 ├── tests/
-│   └── SalatyReminder.Core.Tests/  xUnit tests against Aladhan reference times
+│   └── SalatyReminder.Core.Tests/  xUnit tests: Aladhan reference times, occasions, night times
 ├── docs/                           README images
 ├── Directory.Build.props           Version and settings shared by every project
 ├── global.json                     Pinned .NET SDK
@@ -210,7 +227,11 @@ The [release workflow](.github/workflows/release.yml) runs the tests, builds the
 - تحديد الموقع تلقائيًا أو اختيار المدينة يدويًا
 - تسع طرق حساب، منها الهيئة المصرية العامة للمساحة وأم القرى ورابطة العالم الإسلامي
 - بطاقة تعرض مواقيت اليوم كاملة مع السنن الرواتب والتاريخين الميلادي والهجري
-- تصفح أي يوم بالأسهم أو من التقويم
+- تصفح أي يوم بالأسهم أو من التقويم، مع المناسبات الإسلامية وأيام صيام السنة
+- وضع رمضان: عد تنازلي للإفطار نهارًا ولنهاية السحور ليلًا، مع وقت الإمساك وتذكير بالسحور
+- مرّر الفأرة على الأداة لترى مواقيت اليوم دون نقر
+- تذكير بسورة الكهف وصلاة الجمعة، وبأذكار الصباح والمساء
+- منتصف الليل وبداية الثلث الأخير
 - واجهة عربية كاملة من اليمين إلى اليسار
 - تحديث تلقائي آمن من GitHub
 

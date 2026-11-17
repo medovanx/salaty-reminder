@@ -27,6 +27,19 @@ public sealed class AppSettings
     public string AdhanFile { get; set; } = "";
     public bool ShowSunnah { get; set; } = true;
 
+    /// <summary>In Ramadan the widget counts down to Iftar by day and to the end of Suhoor by night.</summary>
+    public bool RamadanMode { get; set; } = true;
+    /// <summary>Islamic occasions and sunnah fasting days on the calendar and the card.</summary>
+    public bool ShowOccasions { get; set; } = true;
+    /// <summary>A reminder the evening before a sunnah fast (Monday, Thursday, white days, Arafah, Ashura).</summary>
+    public bool FastingReminders { get; set; }
+    /// <summary>Friday: Surat Al-Kahf in the morning and Jumu'ah ahead of time.</summary>
+    public bool FridayReminders { get; set; } = true;
+    /// <summary>Morning adhkar after Fajr and evening adhkar after Asr.</summary>
+    public bool AdhkarReminders { get; set; } = true;
+    /// <summary>Midnight and the last third of the night under the prayer list.</summary>
+    public bool ShowNightTimes { get; set; } = true;
+
     /// <summary>"Right" = beside the tray, "Left" = left end of the taskbar.</summary>
     public string WidgetSide { get; set; } = "Right";
     /// <summary>Extra shift in pixels (at 100% scale), positive = towards the centre.</summary>

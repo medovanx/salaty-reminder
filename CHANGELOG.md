@@ -3,6 +3,16 @@
 All notable changes to Salaty Reminder are listed here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.6.0] - 2026-11-17
+
+### Added
+- Ramadan mode: in Ramadan the widget and the card count down to Iftar by day and to the end of Suhoor by night. The card's bar follows the fast from Fajr to Maghrib, Fajr shows Imsak (10 minutes before), Maghrib's notification says it is Iftar, and a Suhoor reminder comes 45 minutes before Fajr.
+- Rest the mouse on the widget for a small card with today's times, the Hijri date and any occasion, plus Imsak and Iftar in Ramadan.
+- Islamic occasions on the calendar and the card: the Islamic New Year, Tasu'a and Ashura, the start of Ramadan and its last ten nights, Eid al-Fitr, the first ten days of Dhu al-Hijjah, Arafah, Eid al-Adha and Tashreeq. Sunnah fasting days are named too (Monday, Thursday, the white days, Arafah, Ashura, six of Shawwal), never on an Eid or a day of Tashreeq.
+- Friday reminders for Surat Al-Kahf and for Jumu'ah 45 minutes ahead, morning and evening adhkar reminders, and an optional reminder the evening before a sunnah fast.
+- Midnight and the start of the last third of the night under the prayer list and on the hover card.
+- A new Extras page in Settings turns each of these on or off.
+
 ## [1.5.0] - 2026-11-17
 
 ### Changed
@@ -115,6 +125,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Automatic updates from GitHub Releases with SHA-256 verification.
 - Windows 10 support: the task-button strip is shrunk to make room for the widget.
 
+[1.6.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.0
 [1.5.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.5.0
 [1.4.4]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.4.4
 [1.4.3]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.4.3

@@ -1,4 +1,5 @@
 global using SalatyReminder.Configuration;
+global using SalatyReminder.Core.Islamic;
 global using SalatyReminder.Core.Prayers;
 global using SalatyReminder.DevTools;
 global using SalatyReminder.Interop;
