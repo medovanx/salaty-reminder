@@ -35,7 +35,12 @@ public static class L
         ["AutoCheck"] = ("Check for updates automatically", "التحقق من التحديثات تلقائيًا"),
         ["AutoInstall"] = ("Install updates automatically", "تثبيت التحديثات تلقائيًا"),
         ["CheckNow"] = ("Check now", "تحقق الآن"),
-        ["SourceCode"] = ("Source code and releases", "الكود المصدري والإصدارات"),
+        ["CheckingUpdates"] = ("Checking for updates…", "جارٍ البحث عن تحديثات…"),
+        ["UpdateDownloading"] = ("Downloading {0}: {1}", "جارٍ تنزيل {0}: {1}"),
+        ["UpdateVerifying"] = ("Checking the download…", "جارٍ التحقق من التنزيل…"),
+        ["UpdateRestarting"] = ("Restarting into {0}…", "جارٍ إعادة التشغيل إلى {0}…"),
+        ["GitHubRepo"] = ("GitHub page", "صفحة GitHub"),
+        ["ReleaseNotes"] = ("Release notes", "ملاحظات الإصدار"),
         ["CheckForUpdates"] = ("Check for updates", "التحقق من التحديثات"),
         ["Version"] = ("Version {0}", "الإصدار {0}"),
         ["UpToDate"] = ("You're on the latest version ({0}).", "لديك أحدث إصدار ({0})."),
@@ -58,6 +63,7 @@ public static class L
                         "يستخدم موقع ويندوز، وإذا كان معطلاً يتم تحديد الموقع من عنوان IP عبر الإنترنت."),
         ["Manual"] = ("Choose a city", "اختيار مدينة"),
         ["Search"] = ("Search", "بحث"),
+        ["Searching"] = ("Searching", "جارٍ البحث"),
         ["City"] = ("City", "المدينة"),
         ["Latitude"] = ("Latitude", "خط العرض"),
         ["Longitude"] = ("Longitude", "خط الطول"),
@@ -90,6 +96,19 @@ public static class L
 
     public static string T(string key) => D.TryGetValue(key, out var v) ? (Ar ? v.ar : v.en) : key;
     public static string F(string key, params object[] args) => string.Format(T(key), args);
+
+    /// <summary>Keeps numbers and units in left-to-right order inside Arabic text.</summary>
+    public static string Ltr(string s) => "\u200E" + s + "\u200E";
+
+    /// <summary>"512 B", "1.5 KB", "32.8 MB" in binary units.</summary>
+    public static string Size(long bytes)
+    {
+        string[] units = ["B", "KB", "MB", "GB"];
+        double v = Math.Max(0, bytes);
+        int u = 0;
+        while (v >= 1024 && u < units.Length - 1) { v /= 1024; u++; }
+        return u == 0 ? $"{bytes} B" : $"{v.ToString(v < 10 ? "0.##" : v < 100 ? "0.#" : "0", CultureInfo.InvariantCulture)} {units[u]}";
+    }
 
     public static CultureInfo Culture => Ar ? CultureInfo.GetCultureInfo("ar-EG") : CultureInfo.GetCultureInfo("en-US");
 

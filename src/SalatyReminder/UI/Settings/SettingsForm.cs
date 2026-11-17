@@ -32,7 +32,11 @@ sealed class SettingsForm : Form
     // Updates
     readonly ToggleSwitch tglAutoCheck = new(), tglAutoInstall = new();
     readonly ThemedButton btnCheck = new() { AutoSize = true, Height = 30 };
-    readonly Label lblUpdate = new() { AutoSize = true, Tag = "dim", MaximumSize = new Size(440, 0) };
+    /// <summary>Takes the Check now button's place while an update is checked for or installed.</summary>
+    readonly ProgressLine updateBar = new() { Width = 200, Height = 30, Visible = false };
+    readonly IconButton btnGitHub = new() { Width = 150, Height = 32, Glyph = Art.IconOpen }, btnNotes = new() { Width = 150, Height = 32, Glyph = Art.IconDocument };
+    /// <summary>Fixed to the button height and centred, so the status lines up with Check now and the progress bar.</summary>
+    readonly Label lblUpdate = new() { AutoSize = false, Size = new Size(400, 30), TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = true, Tag = "dim" };
 
     readonly ThemedButton btnSave = new() { Size = new Size(110, 34) }, btnCancel = new() { Size = new Size(110, 34) };
     readonly List<(string glyph, string title, Control page)> pages = [];
@@ -100,6 +104,7 @@ sealed class SettingsForm : Form
 
     public int PageCount => pages.Count;
     public void ShowPageForShot(int i) => ShowPage(i);
+    public void ShowUpdatesForShot() => ShowPage(pages.Count - 1);
 
     void ShowPage(int i)
     {
@@ -235,22 +240,36 @@ sealed class SettingsForm : Form
         tglAutoInstall.Checked = s.AutoInstallUpdates;
         btnCheck.Text = L.T("CheckNow");
         var version = new Label { Text = L.F("Version", Updater.CurrentText), AutoSize = true, Font = new Font("Segoe UI Semibold", 11f), Margin = new Padding(0, 0, 0, 8) };
-        var repo = new LinkLabel { Text = "github.com/" + Updater.Repo, AutoSize = true, Margin = new Padding(0), RightToLeft = RightToLeft.No };
-        repo.LinkClicked += (_, _) => Updater.OpenPage(Updater.RepoPage);
         AddPage("\uE895", L.T("Updates"), Card(L.T("Updates"), "\uE895",
             version,
             Row(L.T("AutoCheck"), tglAutoCheck),
             Row(L.T("AutoInstall"), tglAutoInstall),
-            Row(L.T("SourceCode"), repo),
-            Flow(btnCheck, lblUpdate)));
+            Flow(btnCheck, updateBar, lblUpdate),
+            Flow(btnGitHub, btnNotes)));
+        btnGitHub.Text = L.T("GitHubRepo");
+        btnNotes.Text = L.T("ReleaseNotes");
+        btnGitHub.Click += (_, _) => Updater.OpenPage(Updater.RepoPage);
+        btnNotes.Click += (_, _) => Updater.OpenPage(Updater.ReleasesPage);
+        btnGitHub.Theme = btnNotes.Theme = updateBar.Theme = t;
         tglAutoCheck.CheckedChanged += (_, _) => SyncEnabled();
         btnCheck.Click += async (_, _) =>
         {
-            btnCheck.Enabled = false;
-            lblUpdate.Text = "…";
-            lblUpdate.Text = await app.CheckForUpdatesAsync(userInitiated: true);
-            btnCheck.Enabled = true;
+            string msg = await app.CheckForUpdatesAsync(userInitiated: true);
+            if (!app.UpdateBusy) lblUpdate.Text = msg;
         };
+        app.UpdateChanged += SyncUpdate;
+        FormClosed += (_, _) => app.UpdateChanged -= SyncUpdate;
+        if (app.UpdateBusy) SyncUpdate();
+    }
+
+    /// <summary>While busy, a progress bar stands where Check now was and the line beside it says what is happening.</summary>
+    void SyncUpdate()
+    {
+        if (IsDisposed) return;
+        updateBar.Visible = app.UpdateBusy;
+        btnCheck.Visible = !app.UpdateBusy;
+        updateBar.Value = app.UpdateFraction;
+        if (app.UpdateStatus.Length > 0) lblUpdate.Text = app.UpdateStatus;
     }
 
     void SyncEnabled()
@@ -265,9 +284,10 @@ sealed class SettingsForm : Form
     async Task SearchAsync()
     {
         if (string.IsNullOrWhiteSpace(txtSearch.Text)) return;
-        btnSearch.Enabled = false;
-        results = await LocationService.SearchAsync(txtSearch.Text.Trim(), cmbLang.SelectedIndex == 1 ? "ar" : "en");
-        btnSearch.Enabled = true;
+        btnSearch.Text = L.T("Searching");
+        btnSearch.Busy = true;
+        try { results = await LocationService.SearchAsync(txtSearch.Text.Trim(), cmbLang.SelectedIndex == 1 ? "ar" : "en"); }
+        finally { btnSearch.Busy = false; btnSearch.Text = L.T("Search"); }
         cmbResults.Items.Clear();
         resultsRow!.Visible = true;
         if (results.Count == 0) { cmbResults.Items.Add(L.T("NoResults")); cmbResults.SelectedIndex = 0; return; }

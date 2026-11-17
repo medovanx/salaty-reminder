@@ -11,7 +11,7 @@ static class Art
 
     // Windows icon font: Segoe Fluent Icons (Win11) or Segoe MDL2 Assets (Win10) share these code points.
     public const string IconSettings = "\uE713", IconLocation = "\uE707", IconCalendar = "\uE787",
-                        IconPrev = "\uE76B", IconNext = "\uE76C";
+                        IconPrev = "\uE76B", IconNext = "\uE76C", IconOpen = "\uE8A7", IconDocument = "\uE8A5";
 
     public static readonly string IconFontName =
         new System.Drawing.Text.InstalledFontCollection().Families.Any(f => f.Name == "Segoe Fluent Icons")
@@ -27,6 +27,13 @@ static class Art
         using var b = new SolidBrush(c);
         g.DrawString(glyph, f, b, new RectangleF(0, 1, px, px), sf);
         return bmp;
+    }
+
+    public static void FillRound(Graphics g, RectangleF r, float rad, Color c)
+    {
+        using var p = RoundRect(r, rad);
+        using var b = new SolidBrush(c);
+        g.FillPath(b, p);
     }
 
     public static GraphicsPath RoundRect(RectangleF r, float rad)

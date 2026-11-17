@@ -3,6 +3,14 @@
 All notable changes to Salaty Reminder are listed here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.4.0] - 2026-11-17
+
+### Added
+- Right-click the taskbar widget to switch the language between English and Arabic.
+- The Updates page shows progress: a bar takes the place of Check now while it checks, downloads (with percent and size) and verifies an update.
+- GitHub page and Release notes buttons on the Updates page.
+- The Search button for a city shows a spinner while it searches.
+
 ## [1.3.0] - 2026-11-16
 
 ### Changed
@@ -77,6 +85,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Automatic updates from GitHub Releases with SHA-256 verification.
 - Windows 10 support: the task-button strip is shrunk to make room for the widget.
 
+[1.4.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.4.0
 [1.3.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.3.0
 [1.2.1]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.2.1
 [1.2.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.2.0

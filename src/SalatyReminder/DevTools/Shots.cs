@@ -37,6 +37,12 @@ static class Shots
                 settings.ShowPageForShot(i);
                 Save(settings, Path.Combine(dir, $"settings-{i}-{lang}.png"));
             }
+            settings.ShowUpdatesForShot();
+            app.DemoUpdate(true, null, L.T("CheckingUpdates"));
+            Save(settings, Path.Combine(dir, $"settings-checking-{lang}.png"));
+            app.DemoUpdate(true, 0.42, L.F("UpdateDownloading", "9.9.9", L.Ltr($"42%  {L.Size(34_400_000)} / {L.Size(81_920_000)}")));
+            Save(settings, Path.Combine(dir, $"settings-updating-{lang}.png"));
+            app.DemoUpdate(false, null, "");
             settings.Close();
 
             var (p, at) = app.GetNext(DateTime.Now);
