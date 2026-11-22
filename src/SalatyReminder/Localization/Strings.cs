@@ -17,6 +17,8 @@ public static class L
         ["Asr"] = ("Asr", "العصر"),
         ["Maghrib"] = ("Maghrib", "المغرب"),
         ["Isha"] = ("Isha", "العشاء"),
+        ["Qiyam"] = ("Qiyam al-Layl", "قيام الليل"),
+        ["QiyamSub"] = ("Best in the last third, until Fajr", "أفضله في الثلث الأخير حتى الفجر"),
         ["Now"] = ("now", "الآن"),
         ["TimeToPray"] = ("Time to pray", "حان وقت الصلاة"),
         ["NotifTitle"] = ("It's time for {0}", "حان الآن موعد صلاة {0}"),

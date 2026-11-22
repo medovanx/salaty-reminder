@@ -8,7 +8,7 @@ sealed class PrayerCard : Form
     const int W = 340, HeaderH = 192;
     float RowH => app.S.ShowSunnah ? 46 : 38;
     float NightH => app.S.ShowNightTimes ? 40 : 0;
-    int H => (int)(258 + RowH * 6 + NightH + 92);
+    int H => (int)(258 + RowH * 7 + NightH + 92);
 
     readonly SalatyApp app;
     readonly System.Windows.Forms.Timer tick = new() { Interval = 1000 };
@@ -321,7 +321,7 @@ sealed class PrayerCard : Form
             Draw(g, L.T("BackToToday"), fLink, accent, rToday, center: true);
         }
 
-        // ---- Six times for the viewed day ----
+        // ---- Six times for the viewed day, then Qiyam al-Layl ----
         bool nextIsTomorrow = at.Date > now.Date;
         bool ramadanDay = st.RamadanMode && Ramadan.IsRamadan(day, st.HijriAdjust);
         float y = 258;
@@ -356,6 +356,22 @@ sealed class PrayerCard : Form
             }
             else Draw(g, L.PrayerName(p, t), f, c, Box(56, y, 160, rh));
             Draw(g, L.Time(t, st.Use24h), f, c, Box(220, y, W - 244, rh), far: true);
+            y += rh;
+        }
+
+        // Qiyam al-Layl after Isha: a voluntary prayer, so it is never the next prayer and has no reminder.
+        // Its time is the start of the night's last third, the best part of it.
+        {
+            var qt = app.NightAfter(day).LastThird;
+            float rh = RowH;
+            Art.QiyamGlyph(g, Box(24, y + rh / 2 - 10, 20, 20), dark, false, dim);
+            if (st.ShowSunnah)
+            {
+                Draw(g, L.T("Qiyam"), fRow, fg, Box(56, y + 5, 170, 20));
+                Draw(g, L.T("QiyamSub"), fTiny, dim, Box(56, y + 24, 200, 16));
+            }
+            else Draw(g, L.T("Qiyam"), fRow, fg, Box(56, y, 160, rh));
+            Draw(g, L.Time(qt, st.Use24h), fRow, fg, Box(220, y, W - 244, rh), far: true);
             y += rh;
         }
 

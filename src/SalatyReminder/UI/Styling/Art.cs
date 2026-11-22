@@ -233,7 +233,14 @@ static class Art
     /// Small coloured picture per prayer: the sun's height over a horizon, or the moon at night.
     /// <paramref name="faded"/> draws it see-through for a prayer that has passed.
     /// </summary>
-    public static void PrayerGlyph(Graphics g, Prayer p, RectangleF box, bool dark, bool faded, Color line)
+    public static void PrayerGlyph(Graphics g, Prayer p, RectangleF box, bool dark, bool faded, Color line) =>
+        Glyph(g, p, box, dark, faded, line);
+
+    /// <summary>Qiyam al-Layl: a crescent in a sky of stars, drawn like the prayer pictures.</summary>
+    public static void QiyamGlyph(Graphics g, RectangleF box, bool dark, bool faded, Color line) =>
+        Glyph(g, null, box, dark, faded, line);
+
+    static void Glyph(Graphics g, Prayer? p, RectangleF box, bool dark, bool faded, Color line)
     {
         // At 20px, thin rays and small discs drawn straight onto the card come out jagged, and a gradient
         // fill doesn't antialias its own edge. Drawing at 4x and scaling down smooths every edge.
@@ -255,7 +262,7 @@ static class Art
     }
 
     /// <summary>Draws one prayer picture; <paramref name="k"/> is the supersampling factor, for stroke widths.</summary>
-    static void DrawPrayer(Graphics g, Prayer p, RectangleF box, bool dark, Color line, float k)
+    static void DrawPrayer(Graphics g, Prayer? p, RectangleF box, bool dark, Color line, float k)
     {
         var st = g.Save();
         g.SmoothingMode = SmoothingMode.AntiAlias;
@@ -327,6 +334,12 @@ static class Art
                 break;
             case Prayer.Isha:
                 Moon(box, MoonLight, MoonShade, true);
+                break;
+            case null: // Qiyam al-Layl: the moon lower down, with stars spread over the sky
+                Moon(new RectangleF(ox, oy + n * 0.12f, n * 0.88f, n * 0.88f), MoonLight, MoonShade, false);
+                Star(g, new PointF(ox + n * 0.80f, oy + n * 0.20f), n * 0.15f, n * 0.05f, StarGold);
+                Star(g, new PointF(ox + n * 0.50f, oy + n * 0.06f), n * 0.09f, n * 0.03f, StarGold);
+                Star(g, new PointF(ox + n * 0.90f, oy + n * 0.62f), n * 0.08f, n * 0.028f, StarGold);
                 break;
         }
         g.Restore(st);
