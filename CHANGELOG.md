@@ -3,18 +3,18 @@
 All notable changes to Salaty Reminder are listed here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
-## [1.6.5] - 2026-11-18
-
-### Fixed
-- Start with Windows works again on recent Windows 11 builds, which skip a startup entry unless it is also marked as enabled in Windows' startup list. Turning it on now writes that mark too.
-
-## [1.6.5] - 2026-11-22
+## [1.6.6] - 2026-11-22
 
 ### Fixed
 - On Friday the Jumu'ah row showed Dhuhr's sunnah (4 before, 2 after). It now says 2 to 4 rak'ahs after, with none before, as in Islamweb fatwa 55016.
 
 ### Changed
 - Duha now gives its rak'ahs: 2 to 8, from 15 minutes after sunrise.
+
+## [1.6.5] - 2026-11-18
+
+### Fixed
+- Start with Windows works again on recent Windows 11 builds, which skip a startup entry unless it is also marked as enabled in Windows' startup list. Turning it on now writes that mark too.
 
 ## [1.6.4] - 2026-11-17
 
@@ -161,7 +161,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Automatic updates from GitHub Releases with SHA-256 verification.
 - Windows 10 support: the task-button strip is shrunk to make room for the widget.
 
-[1.6.5]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.5
+[1.6.6]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.6
 [1.6.5]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.5
 [1.6.4]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.4
 [1.6.3]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.3
