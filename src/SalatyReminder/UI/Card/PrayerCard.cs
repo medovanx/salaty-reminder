@@ -348,7 +348,7 @@ sealed class PrayerCard : Form
             // In Ramadan, Fajr's line gives Imsak and Maghrib's says it is Iftar.
             string sub = ramadanDay && p == Prayer.Fajr ? L.F("Imsak", L.Time(Ramadan.Imsak(t), st.Use24h))
                        : ramadanDay && p == Prayer.Maghrib ? L.T("Iftar")
-                       : L.Sunnah(p);
+                       : L.Sunnah(p, t);
             if (st.ShowSunnah && sub.Length > 0)
             {
                 Draw(g, L.PrayerName(p, t), f, c, Box(56, y + 5, 170, 20));
