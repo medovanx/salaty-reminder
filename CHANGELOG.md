@@ -3,6 +3,11 @@
 All notable changes to Salaty Reminder are listed here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.6.9] - 2026-11-23
+
+### Added
+- Icons on the night lines: a clock for Midnight, a star for the last third, the sun for the day length and the moon for the night length, each centred on its text.
+
 ## [1.6.8] - 2026-11-23
 
 ### Changed
@@ -172,6 +177,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Automatic updates from GitHub Releases with SHA-256 verification.
 - Windows 10 support: the task-button strip is shrunk to make room for the widget.
 
+[1.6.9]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.9
 [1.6.8]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.8
 [1.6.7]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.7
 [1.6.6]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.6

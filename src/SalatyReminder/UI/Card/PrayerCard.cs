@@ -393,25 +393,37 @@ sealed class PrayerCard : Form
             int wa = M(a), wb = M(b), wc = M(c), wd = M(d);
             int icon = Px(13), gap = Px(4), sep = Px(18), lineY = Px(y + 2), lineH = Px(20), line2 = lineY + Px(18);
             // Two columns: Midnight over the day length, the last third over the night length, each column
-            // starting at the same edge (the left in English, the right in Arabic).
-            int col1 = Math.Max(wa + gap + icon, wc), col2 = Math.Max(wb, wd);
+            // starting at the same edge (the left in English, the right in Arabic). Each item leads with an icon:
+            // a clock for midnight, a star for the last third, the sun for the day and the moon for the night.
+            int lead = Px(12), lg = Px(4), pre = lead + lg;
+            int col1 = Math.Max(pre + wa + gap + icon, pre + wc), col2 = Math.Max(pre + wb, pre + wd);
             int total = col1 + sep + col2, x0 = (Width - total) / 2;
             int c1 = L.Ar ? x0 + col2 + sep : x0, c2 = L.Ar ? x0 : x0 + col1 + sep;
-            int ax = L.Ar ? c1 + col1 - wa : c1;
+            // Where an item's icon and text go, from its column's start edge.
+            (int icon, int text) Place(int col, int colW, int w) =>
+                L.Ar ? (col + colW - lead, col + colW - pre - w) : (col, col + pre);
+            var (aI, ax) = Place(c1, col1, wa);
+            var (bI, bx) = Place(c2, col2, wb);
+            var (cI, cx) = Place(c1, col1, wc);
+            var (dI, dx) = Place(c2, col2, wd);
             int ix = L.Ar ? ax - gap - icon : ax + wa + gap;
-            int bx = L.Ar ? c2 + col2 - wb : c2;
-            int cx = L.Ar ? c1 + col1 - wc : c1, dx = L.Ar ? c2 + col2 - wd : c2;
             var tf = mf | TextFormatFlags.VerticalCenter | (L.Ar ? TextFormatFlags.RightToLeft : 0);
             TextRenderer.DrawText(g, a, fTiny, new Rectangle(ax, lineY, wa + Px(2), lineH), dim, tf);
             TextRenderer.DrawText(g, b, fTiny, new Rectangle(bx, lineY, wb + Px(2), lineH), dim, tf);
             TextRenderer.DrawText(g, c, fTiny, new Rectangle(cx, line2, wc + Px(2), lineH), faint, tf);
             TextRenderer.DrawText(g, d, fTiny, new Rectangle(dx, line2, wd + Px(2), lineH), faint, tf);
             rInfo = new Rectangle(ix - Px(2), lineY, icon + Px(4), lineH);
-            // Centred on the digits' ink, a little taller than them, not on the text box (whose middle is lower).
+            // Every icon is centred on the digits' ink, a pixel taller than them on each side, so its middle row is
+            // exactly theirs; not on the text box, whose middle is lower.
             var (inkTop, inkBottom) = Art.TextInk(fTiny, lineH);
-            // One pixel taller than the digits on each side, so its middle row is exactly theirs.
             float inkH = inkBottom - inkTop;
-            Art.GlyphFit(g, "", new RectangleF(ix, lineY + inkTop - 1, icon, inkH + 2), tipShown ? accent : dim);
+            void Icon(string glyph, int x, int top, int w, Color col) =>
+                Art.GlyphFit(g, glyph, new RectangleF(x, top + inkTop - 1, w, inkH + 2), col);
+            Icon("\uE121", aI, lineY, lead, dim);
+            Icon("\uE734", bI, lineY, lead, dim);
+            Icon("\uE706", cI, line2, lead, faint);
+            Icon("\uE708", dI, line2, lead, faint);
+            Icon("\uE946", ix, lineY, icon, tipShown ? accent : dim);
             y += NightH;
         }
 
