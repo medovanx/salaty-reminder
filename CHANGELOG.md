@@ -3,6 +3,12 @@
 All notable changes to Salaty Reminder are listed here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.6.8] - 2026-11-23
+
+### Changed
+- The Sunrise row is now Duha, at the time Duha starts (15 minutes after sunrise), with the sunrise time and its 2 to 8 rak'ahs on the line under it. The hover card shows it the same way.
+- From Fajr until Duha starts, the widget, the card's header and bar, and the highlighted row point to Duha instead of Dhuhr.
+
 ## [1.6.7] - 2026-11-22
 
 ### Added
@@ -166,6 +172,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Automatic updates from GitHub Releases with SHA-256 verification.
 - Windows 10 support: the task-button strip is shrunk to make room for the widget.
 
+[1.6.8]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.8
 [1.6.7]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.7
 [1.6.6]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.6
 [1.6.5]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.5

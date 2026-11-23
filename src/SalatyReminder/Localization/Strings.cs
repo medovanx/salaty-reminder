@@ -17,6 +17,8 @@ public static class L
         ["Asr"] = ("Asr", "العصر"),
         ["Maghrib"] = ("Maghrib", "المغرب"),
         ["Isha"] = ("Isha", "العشاء"),
+        ["Duha"] = ("Duha", "الضحى"),
+        ["DuhaSub"] = ("Sunrise {0}, 2 to 8 rak'ahs", "الشروق {0}، من ٢ إلى ٨ ركعات"),
         ["Qiyam"] = ("Qiyam al-Layl", "قيام الليل"),
         ["QiyamSub"] = ("Best in the last third, until Fajr", "أفضله في الثلث الأخير حتى الفجر"),
         ["Now"] = ("now", "الآن"),
@@ -177,14 +179,13 @@ public static class L
     public static CultureInfo Culture => Ar ? CultureInfo.GetCultureInfo("ar-EG") : CultureInfo.GetCultureInfo("en-US");
 
     /// <summary>
-    /// Sunan al-Rawatib (confirmed sunnah) around each prayer, plus Duha after sunrise. On Friday Dhuhr is
+    /// Sunan al-Rawatib (confirmed sunnah) around each prayer. On Friday Dhuhr is
     /// Jumu'ah, which has no sunnah before it and two to four rak'ahs after it (Islamweb fatwa 55016).
     /// </summary>
     public static string Sunnah(Prayer p, DateTime when) => p switch
     {
         Prayer.Dhuhr when when.DayOfWeek == DayOfWeek.Friday => Ar ? "السنة: ركعتان إلى ٤ بعدها" : "Sunnah: 2 to 4 after",
         Prayer.Fajr => Ar ? "السنة: ركعتان قبل الفرض" : "Sunnah: 2 before",
-        Prayer.Sunrise => Ar ? "الضحى: ٢ إلى ٨، بعد الشروق بربع ساعة" : "Duha: 2 to 8, 15 min after sunrise",
         Prayer.Dhuhr => Ar ? "السنة: ٤ قبل، ٢ بعد" : "Sunnah: 4 before, 2 after",
         Prayer.Asr => "",
         Prayer.Maghrib => Ar ? "السنة: ركعتان بعد الفرض" : "Sunnah: 2 after",

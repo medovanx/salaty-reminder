@@ -133,17 +133,18 @@ sealed class HoverCard : Form
         using (var pen = new Pen(t.Border)) g.DrawLine(pen, Px(12), Px(y), Width - Px(12), Px(y));
         y += 4;
 
-        var (next, _) = app.GetNext(now);
+        var (next, _, _) = app.GetNextShown(now);
         foreach (var p in Enum.GetValues<Prayer>())
         {
-            var at = today[p];
+            // The sunrise row is Duha, at the time it starts.
+            var at = p == Prayer.Sunrise ? today[p].AddMinutes(SalatyApp.DuhaMinutes) : today[p];
             bool isNext = p == next && at.Date == now.Date;
             bool past = at <= now && !isNext;
             if (isNext)
                 Art.FillRound(g, new RectangleF(Px(6), Px(y + 1), Width - Px(12), Px(22)), Px(6), Color.FromArgb(dark ? 40 : 26, t.Accent));
             Color c = isNext ? t.Accent : past ? t.Dim : t.Text;
             Art.PrayerGlyph(g, p, Box(14, y + 4, 16, 16), dark, past, past ? Color.FromArgb(120, t.Dim) : t.Dim);
-            Draw(g, L.PrayerName(p, at), isNext ? fRowB : fRow, c, Box(38, y, 110, 24));
+            Draw(g, p == Prayer.Sunrise ? L.T("Duha") : L.PrayerName(p, at), isNext ? fRowB : fRow, c, Box(38, y, 110, 24));
             Draw(g, L.Time(at, h24), isNext ? fRowB : fRow, c, Box(130, y, W - 144, 24), far: true);
             y += 24;
         }

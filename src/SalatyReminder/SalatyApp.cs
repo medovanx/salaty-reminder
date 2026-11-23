@@ -146,12 +146,27 @@ sealed class SalatyApp : ApplicationContext
         UpdateWidget(now);
     }
 
+    /// <summary>Duha starts about a quarter of an hour after sunrise, once the sun has risen a spear's length.</summary>
+    public const int DuhaMinutes = 15;
+
     /// <summary>Next of the five prayers (sunrise excluded); after Isha this is tomorrow's Fajr.</summary>
     public (Prayer prayer, DateTime at) GetNext(DateTime now)
     {
         foreach (var p in PrayerCalc.FivePrayers)
             if (Today![p] > now) return (p, Today[p]);
         return (Prayer.Fajr, tomorrow![Prayer.Fajr]);
+    }
+
+    /// <summary>
+    /// What the widget, the card and the hover card point to next: from Fajr until Duha starts that is Duha
+    /// (shown on the Sunrise row, whose line describes it), otherwise the next of the five prayers.
+    /// </summary>
+    public (Prayer row, DateTime at, string name) GetNextShown(DateTime now)
+    {
+        var duha = Today![Prayer.Sunrise].AddMinutes(DuhaMinutes);
+        if (now >= Today[Prayer.Fajr] && now < duha) return (Prayer.Sunrise, duha, L.T("Duha"));
+        var (p, at) = GetNext(now);
+        return (p, at, L.PrayerName(p, at));
     }
 
     public DayTimes TimesFor(DateOnly date) =>
@@ -210,8 +225,8 @@ sealed class SalatyApp : ApplicationContext
         }
         else
         {
-            var (p, at) = GetNext(now);
-            string line1 = $"{L.PrayerName(p, at)} {L.Time(at, S.Use24h)}";
+            var (_, at, name) = GetNextShown(now);
+            string line1 = $"{name} {L.Time(at, S.Use24h)}";
             // Ramadan: Iftar by day, the end of Suhoor by night.
             if (RamadanTarget(now) is { } r) { line1 = $"{r.label} {L.Time(r.at, S.Use24h)}"; at = r.at; }
             // While an update runs the second line says so, with the bar under it.

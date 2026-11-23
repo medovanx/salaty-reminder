@@ -250,10 +250,11 @@ sealed class PrayerCard : Form
         Draw(g, L.T("AppName"), fSmallB, white, Box(40, 12, 110, 22));
         Draw(g, st.LocationName, fTiny, soft, Box(150, 12, W - 166, 22), far: true);
 
-        var (next, at) = app.GetNext(now);
+        // From Fajr until Duha starts, the header, the bar and the highlighted row point to Duha.
+        var (next, at, nextName) = app.GetNextShown(now);
         var (prev, prevAt) = app.GetPrevious(now);
-        string headLabel = L.T("NextPrayer"), headName = L.PrayerName(next, at), headAt = L.Time(at, st.Use24h);
-        string fromLabel = $"{L.PrayerName(prev, prevAt)} {L.Time(prevAt, st.Use24h)}", toLabel = $"{L.PrayerName(next, at)} {L.Time(at, st.Use24h)}";
+        string headLabel = L.T("NextPrayer"), headName = nextName, headAt = L.Time(at, st.Use24h);
+        string fromLabel = $"{L.PrayerName(prev, prevAt)} {L.Time(prevAt, st.Use24h)}", toLabel = $"{nextName} {L.Time(at, st.Use24h)}";
         DateTime from = prevAt, to = at;
         // Ramadan: the header counts down to Iftar by day (the bar is the fast, Fajr to Maghrib) and to the end of Suhoor by night.
         if (app.RamadanTarget(now) is { } r)
@@ -327,7 +328,10 @@ sealed class PrayerCard : Form
         float y = 258;
         foreach (var p in Enum.GetValues<Prayer>())
         {
-            var t = dayTimes[p];
+            // The sunrise row is Duha: its time is when Duha starts, and its line gives the sunrise, when Fajr ends.
+            bool duhaRow = p == Prayer.Sunrise;
+            var t = duhaRow ? dayTimes[p].AddMinutes(SalatyApp.DuhaMinutes) : dayTimes[p];
+            string name = duhaRow ? L.T("Duha") : L.PrayerName(p, t);
             bool isNext = isToday && !nextIsTomorrow && p == next;
             bool past = isToday && t <= now && !isNext;
             float rh = RowH;
@@ -341,20 +345,21 @@ sealed class PrayerCard : Form
                 using var sb = new SolidBrush(accent);
                 g.FillRectangle(sb, stripe);
             }
-            var c = isNext ? accent : past ? faint : p == Prayer.Sunrise ? dim : fg;
+            var c = isNext ? accent : past ? faint : fg;
             var f = isNext ? fRowB : fRow;
             // Each prayer in full colour; passed ones fade, with the horizon in the row's quiet tone.
             Art.PrayerGlyph(g, p, Box(24, y + rh / 2 - 10, 20, 20), dark, past, past ? faint : dim);
             // In Ramadan, Fajr's line gives Imsak and Maghrib's says it is Iftar.
             string sub = ramadanDay && p == Prayer.Fajr ? L.F("Imsak", L.Time(Ramadan.Imsak(t), st.Use24h))
                        : ramadanDay && p == Prayer.Maghrib ? L.T("Iftar")
+                       : duhaRow ? L.F("DuhaSub", L.Time(dayTimes[p], st.Use24h))
                        : L.Sunnah(p, t);
             if (st.ShowSunnah && sub.Length > 0)
             {
-                Draw(g, L.PrayerName(p, t), f, c, Box(56, y + 5, 170, 20));
+                Draw(g, name, f, c, Box(56, y + 5, 170, 20));
                 Draw(g, sub, fTiny, past ? faint : ramadanDay && p is Prayer.Fajr or Prayer.Maghrib ? Art.GoldText(dark) : dim, Box(56, y + 24, 200, 16));
             }
-            else Draw(g, L.PrayerName(p, t), f, c, Box(56, y, 160, rh));
+            else Draw(g, name, f, c, Box(56, y, 160, rh));
             Draw(g, L.Time(t, st.Use24h), f, c, Box(220, y, W - 244, rh), far: true);
             y += rh;
         }
