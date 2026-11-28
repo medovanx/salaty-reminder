@@ -3,6 +3,11 @@
 All notable changes to Salaty Reminder are listed here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and versions follow [Semantic Versioning](https://semver.org/).
 
+## [1.7.1] - 2026-11-28
+
+### Fixed
+- The hover card over the widget now lists Qiyam al-Layl after Isha, like the card, so both show the same prayers.
+
 ## [1.7.0] - 2026-11-28
 
 ### Added
@@ -183,6 +188,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 - Automatic updates from GitHub Releases with SHA-256 verification.
 - Windows 10 support: the task-button strip is shrunk to make room for the widget.
 
+[1.7.1]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.7.1
 [1.7.0]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.7.0
 [1.6.9]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.9
 [1.6.8]: https://github.com/medovanx/salaty-reminder/releases/tag/v1.6.8

@@ -3,7 +3,7 @@ using System.Drawing.Drawing2D;
 namespace SalatyReminder.UI.Taskbar;
 
 /// <summary>
-/// A small card above the widget after the mouse rests on it: today's Hijri date and occasion, the six times,
+/// A small card above the widget after the mouse rests on it: today's Hijri date and occasion, the six times and Qiyam al-Layl,
 /// Imsak and Iftar in Ramadan, and the middle and last third of the night. It never takes focus and hides as soon
 /// as the mouse leaves; clicks pass through to the widget.
 /// </summary>
@@ -67,7 +67,7 @@ sealed class HoverCard : Form
         Show();
     }
 
-    // Rows: Hijri date, the day's label (if any), six times, then Ramadan and night lines when they apply.
+    // Rows: Hijri date, the day's label (if any), six times and Qiyam, then Ramadan and night lines when they apply.
     string DayLabel => app.S.ShowOccasions ? L.DayLabel(Occasions.For(DateOnly.FromDateTime(Clock.Now), app.S.HijriAdjust), Clock.Now.DayOfWeek) : "";
     bool RamadanToday => app.S.RamadanMode && Ramadan.IsRamadan(DateOnly.FromDateTime(Clock.Now), app.S.HijriAdjust);
 
@@ -75,7 +75,7 @@ sealed class HoverCard : Form
     {
         RightToLeft = L.Ar ? RightToLeft.Yes : RightToLeft.No;
         BackColor = new Theme(dark).Surface;
-        float h = 12 + 20 + (DayLabel.Length > 0 ? 18 : 0) + 8 + 6 * 24 + 6;
+        float h = 12 + 20 + (DayLabel.Length > 0 ? 18 : 0) + 8 + 7 * 24 + 6;
         if (RamadanToday) h += 6 + 2 * 20;
         if (app.S.ShowNightTimes) h += 6 + 2 * 20;
         Size = new Size(Px(W), Px(h + 6));
@@ -146,6 +146,15 @@ sealed class HoverCard : Form
             Art.PrayerGlyph(g, p, Box(14, y + 4, 16, 16), dark, past, past ? Color.FromArgb(120, t.Dim) : t.Dim);
             Draw(g, p == Prayer.Sunrise ? L.T("Duha") : L.PrayerName(p, at), isNext ? fRowB : fRow, c, Box(38, y, 110, 24));
             Draw(g, L.Time(at, h24), isNext ? fRowB : fRow, c, Box(130, y, W - 144, 24), far: true);
+            y += 24;
+        }
+
+        // Qiyam al-Layl after Isha, as on the card: a voluntary prayer at the start of the night's last third.
+        {
+            var qt = app.NightAfter(today.Date).LastThird;
+            Art.QiyamGlyph(g, Box(14, y + 4, 16, 16), dark, false, t.Dim);
+            Draw(g, L.T("Qiyam"), fRow, t.Text, Box(38, y, 110, 24));
+            Draw(g, L.Time(qt, h24), fRow, t.Text, Box(130, y, W - 144, 24), far: true);
             y += 24;
         }
 
