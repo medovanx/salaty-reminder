@@ -32,6 +32,7 @@ reminds you before it, plays the adhan, and speaks both English and Arabic.
 - **Prayer card.** Click the widget for all six times with an icon for each in the colours of the sky, a progress bar from the last prayer to the next, the Gregorian and Hijri dates, and the sunnah rawatib for each prayer.
 - **Any day, not just today.** Step through days with the arrows, mouse wheel or arrow keys, or open the calendar (with Hijri days under each date) and jump anywhere: click its title to pick a month or a year directly.
 - **Islamic occasions.** The calendar marks the Islamic New Year, Ashura, the start of Ramadan, both Eids and the Day of Arafah in gold and the white days in teal, and names every occasion and sunnah fast (Mondays, Thursdays, six of Shawwal, the first ten of Dhu al-Hijjah, the last ten nights) when you point at a day.
+- **More than one city.** Save cities in Settings and switch the card between them from the city name at its top; each one in its own time zone. The widget and reminders stay on your default city.
 - **Qiyam al-Layl.** A row after Isha at the start of the last third of the night, the best time for it.
 - **Night times.** Midnight and the start of the last third of the night, for Qiyam, under the prayer list. This is the Islamic midnight, halfway from Maghrib to Fajr rather than 12:00; the "i" beside it says so. Below them, the length of the day (Fajr to Maghrib) and of the night (Maghrib to Fajr).
 - **Reminders.** A notification at prayer time, an early heads-up a few minutes before, a flashing widget, and an optional adhan (a built-in recording or your own MP3/WAV/OGG file). Also: Surat Al-Kahf on Friday morning and Jumu'ah 45 minutes ahead, the morning and evening adhkar, and (if you turn it on) a reminder the evening before a sunnah fast.
@@ -86,6 +87,11 @@ reminds you before it, plays the adhan, and speaks both English and Arabic.
       <img src="docs/screenshots/widget-ramadan-en.png"><br><sub>The widget in Ramadan</sub>
     </td>
   </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/card-city-en.png" width="300"><br><sub>Another city, on its own clock</sub></td>
+    <td align="center"><img src="docs/screenshots/city-menu-en.png"><br><sub>Switch cities from the card</sub></td>
+    <td></td>
+  </tr>
 </table>
 
 ## Install
@@ -113,7 +119,8 @@ The exe is self-contained, so you don't need to install .NET. Windows SmartScree
 | Page | Options |
 | --- | --- |
 | General | Language (English, Arabic), 12 or 24 hour clock, widget position (beside the tray or on the left) and shift in pixels, show sunnah prayers, start with Windows |
-| Location | Detect automatically, or search for a city; latitude and longitude can be edited |
+| Location | Detect automatically, or search for a city; latitude and longitude can be edited. This is the default city for the widget and reminders |
+| My cities | Other cities to switch the card to, each in its own time zone |
 | Calculation | Method, Asr (Standard or Hanafi), Hijri date adjustment of up to 2 days |
 | Reminders | Notification at prayer time, early reminder and its minutes, flash the widget, play the adhan and pick its file |
 | Extras | Ramadan mode, occasions and fasting days on the calendar, reminder before a sunnah fast, Friday reminders, adhkar reminders, midnight, the last third of the night, and the length of the day and night |

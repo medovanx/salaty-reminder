@@ -16,6 +16,7 @@ static class Shots
             {
                 Language = lang, AutoLocation = false, Latitude = 30.0444, Longitude = 31.2357,
                 LocationName = lang == "ar" ? "القاهرة، مصر" : "Cairo, Egypt", Method = "Egyptian",
+                Cities = DemoCities(lang),
             };
             var app = new SalatyApp(s);
 
@@ -110,10 +111,36 @@ static class Shots
             SaveOffscreen(ac, Path.Combine(dir, $"calendar-occasions-{lang}.png"));
             ac.Close();
             ac.Dispose();
+            // A saved city in another time zone, Jakarta, shown on the card at 6:00 in Cairo (11:00 there), and the
+            // card's city list.
+            Clock.Pinned = new DateTime(2026, 11, 23, 6, 0, 0);
+            s.Cities = DemoCities(lang);
+            s.ActiveCity = 0;
+            var other = new SalatyApp(s);
+            var oc = new PrayerCard(other);
+            oc.ShowNear(new Rectangle(Screen.PrimaryScreen!.WorkingArea.Right - 300, Screen.PrimaryScreen.WorkingArea.Bottom, 100, 40));
+            SaveOffscreen(oc, Path.Combine(dir, $"card-city-{lang}.png"));
+            var cm = oc.CityMenuForShot();
+            using (var mb = new Bitmap(cm.Width, cm.Height))
+            {
+                cm.DrawToBitmap(mb, new Rectangle(Point.Empty, cm.Size));
+                mb.Save(Path.Combine(dir, $"city-menu-{lang}.png"), System.Drawing.Imaging.ImageFormat.Png);
+            }
+            cm.Close();
+            oc.Close();
+            oc.Dispose();
+            s.ActiveCity = -1;
             Clock.Pinned = null;
         }
         return 0;
     }
+
+    /// <summary>Fixed demo cities for the shots, never the user's own.</summary>
+    static List<SavedCity> DemoCities(string lang) =>
+    [
+        new(lang == "ar" ? "جاكرتا، إندونيسيا" : "Jakarta, Indonesia", -6.2088, 106.8456, "Asia/Jakarta"),
+        new(lang == "ar" ? "مكة المكرمة، السعودية" : "Makkah, Saudi Arabia", 21.4225, 39.8262, "Asia/Riyadh"),
+    ];
 
     /// <summary>The widget on a dark taskbar-coloured strip, at 150% scale for a crisp README image.</summary>
     static void WidgetStrip(string path, string l1, string l2, bool flash, bool rtl, bool bar = false, double? barValue = null)

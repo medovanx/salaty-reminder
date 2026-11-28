@@ -4,7 +4,8 @@ using Windows.Devices.Geolocation;
 
 namespace SalatyReminder.Services;
 
-public sealed record LocResult(double Lat, double Lon, string Name);
+/// <summary>A place; <paramref name="TimeZone"/> is its IANA zone when the city search gives one.</summary>
+public sealed record LocResult(double Lat, double Lon, string Name, string TimeZone = "");
 
 /// <summary>
 /// Windows location first; if that is off or fails, an IP lookup (ipwho.is).
@@ -80,7 +81,7 @@ public static class LocationService
             foreach (var r in results.EnumerateArray())
             {
                 string name = Join(Str(r, "name"), Str(r, "admin1"), Str(r, "country")) ?? "";
-                list.Add(new(r.GetProperty("latitude").GetDouble(), r.GetProperty("longitude").GetDouble(), name));
+                list.Add(new(r.GetProperty("latitude").GetDouble(), r.GetProperty("longitude").GetDouble(), name, Str(r, "timezone")));
             }
         }
         catch { /* offline: empty list */ }

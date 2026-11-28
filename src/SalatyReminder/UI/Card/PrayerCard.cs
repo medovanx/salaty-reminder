@@ -126,11 +126,12 @@ sealed class PrayerCard : Form
 
     // ---- Day navigation ----
     DateOnly? viewDate;               // null = today
-    Rectangle rPrev, rNext, rDate, rToday;
+    Rectangle rPrev, rNext, rDate, rToday, rCity;
     bool activated;
     readonly CalendarPanel cal = new() { Visible = false };
 
-    DateOnly Today => DateOnly.FromDateTime(Clock.Now);
+    /// <summary>Today on the shown city's clock.</summary>
+    DateOnly Today => DateOnly.FromDateTime(app.Shown.Now);
     DateOnly Viewing => viewDate ?? Today;
 
     void Go(int days) => SetView(Viewing.AddDays(days));
@@ -165,6 +166,7 @@ sealed class PrayerCard : Form
             else if (rNext.Contains(e.Location)) Go(1);
             else if (rDate.Contains(e.Location)) ToggleCalendar();
             else if (viewDate != null && rToday.Contains(e.Location)) SetView(Today);
+            else if (rCity.Contains(e.Location)) ShowCityMenu();
             else if (cal.Visible) cal.Visible = false;
         };
         MouseMove += (_, e) =>
@@ -178,7 +180,7 @@ sealed class PrayerCard : Form
                 Invalidate(rInfo); // the "i" turns teal while it is pointed at
             }
             bool hot = rPrev.Contains(e.Location) || rNext.Contains(e.Location) || rDate.Contains(e.Location)
-                       || (viewDate != null && rToday.Contains(e.Location));
+                       || (viewDate != null && rToday.Contains(e.Location)) || rCity.Contains(e.Location);
             Cursor = overInfo ? Cursors.Help : hot ? Cursors.Hand : Cursors.Default;
         };
         MouseWheel += (_, e) => { if (!cal.Visible) Go(e.Delta > 0 ? -1 : 1); };
@@ -188,6 +190,51 @@ sealed class PrayerCard : Form
             if (dir != 0 && !cal.Focused) { Go(L.Ar ? -dir : dir); e.Handled = true; }
             if (e.KeyCode == Keys.Home) SetView(Today);
         };
+    }
+
+    /// <summary>
+    /// The city list under the city name: the default city (which the widget and reminders always follow), the
+    /// saved cities, and a way to manage them. Picking one only changes what this card shows.
+    /// </summary>
+    void ShowCityMenu()
+    {
+        var menu = BuildCityMenu();
+        activated = false; // the menu takes focus for a moment; don't hide the card for that
+        menu.Closed += (_, _) => BeginInvoke(() =>
+        {
+            activated = true;
+            if (Visible) Activate();
+            menu.Dispose();
+        });
+        // The name sits on the far side of the header, so the list opens under it towards the middle.
+        menu.Show(this, new Point(L.Ar ? rCity.Left : rCity.Right, rCity.Bottom),
+            L.Ar ? ToolStripDropDownDirection.BelowRight : ToolStripDropDownDirection.BelowLeft);
+    }
+
+    public ContextMenuStrip CityMenuForShot()
+    {
+        var m = BuildCityMenu();
+        m.Show(new Point(-3000, -3000));
+        return m;
+    }
+
+    ContextMenuStrip BuildCityMenu()
+    {
+        var menu = new ContextMenuStrip { RightToLeft = L.Ar ? RightToLeft.Yes : RightToLeft.No };
+        int shown = app.S.ActiveCity >= 0 && app.S.ActiveCity < app.S.Cities.Count ? app.S.ActiveCity : -1;
+        void Add(int index, string text)
+        {
+            var item = new ToolStripMenuItem(text) { Checked = shown == index };
+            item.Click += (_, _) => { app.ShowCity(index); viewDate = null; cal.Visible = false; Invalidate(); };
+            menu.Items.Add(item);
+        }
+        Add(-1, $"{app.S.LocationName} ({L.T("DefaultCity")})");
+        for (int i = 0; i < app.S.Cities.Count; i++) Add(i, app.S.Cities[i].Name);
+        menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add(new ToolStripMenuItem(L.T("ManageCities"), null, (_, _) => { Hide(); app.ShowSettings(SettingsForm.CitiesPage); })
+            { Tag = new ThemedMenuRenderer.MenuGlyph(Art.IconSettings) });
+        ThemedMenuRenderer.Style(menu, new Theme(dark));
+        return menu;
     }
 
     protected override void OnVisibleChanged(EventArgs e)
@@ -216,10 +263,11 @@ sealed class PrayerCard : Form
     {
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
-        var now = Clock.Now;
+        // Everything below is for the shown city, on its own clock; the widget and reminders stay on the default.
+        var sch = app.Shown;
+        var now = sch.Now;
         var st = app.S;
-        var today = app.Today;
-        if (today == null) return;
+        var today = sch.TodayAt(now);
 
         Color fg = dark ? Color.FromArgb(240, 240, 240) : Color.FromArgb(25, 25, 25);
         Color dim = dark ? Color.FromArgb(160, 166, 166) : Color.FromArgb(105, 110, 110);
@@ -248,16 +296,27 @@ sealed class PrayerCard : Form
         var glyphBox = Box(16, 14, 18, 18);
         Art.Crescent(g, glyphBox, Art.Gold);
         Draw(g, L.T("AppName"), fSmallB, white, Box(40, 12, 110, 22));
-        Draw(g, st.LocationName, fTiny, soft, Box(150, 12, W - 166, 22), far: true);
+        // The shown city, with a chevron: it opens the city list.
+        const float chevW = 9, chevGap = 4, right = W - 16;
+        string place = sch.Name;
+        float nameW = Math.Min(W - 166 - chevW - chevGap,
+            TextRenderer.MeasureText(g, place, fTiny, Size.Empty, TextFormatFlags.NoPadding | TextFormatFlags.SingleLine).Width / S + 2);
+        Draw(g, place, fTiny, soft, Box(right - chevW - chevGap - nameW, 12, nameW, 22), far: true);
+        var rChev = Box(right - chevW, 12, chevW, 22);
+        // Centred on the text's ink like the card's other icons, not on its box.
+        var (cityInkTop, cityInkBottom) = Art.TextInk(fTiny, rChev.Height);
+        float chevMid = rChev.Top + (cityInkTop + cityInkBottom) / 2f, chevH = Px(5);
+        Art.GlyphFit(g, "", new RectangleF(rChev.Left, chevMid - chevH / 2, rChev.Width, chevH), soft);
+        rCity = Box(right - chevW - chevGap - nameW - 6, 9, nameW + chevGap + chevW + 12, 28);
 
         // From Fajr until Duha starts, the header, the bar and the highlighted row point to Duha.
-        var (next, at, nextName) = app.GetNextShown(now);
-        var (prev, prevAt) = app.GetPrevious(now);
+        var (next, at, nextName) = sch.GetNextShown(now);
+        var (prev, prevAt) = sch.GetPrevious(now);
         string headLabel = L.T("NextPrayer"), headName = nextName, headAt = L.Time(at, st.Use24h);
         string fromLabel = $"{L.PrayerName(prev, prevAt)} {L.Time(prevAt, st.Use24h)}", toLabel = $"{nextName} {L.Time(at, st.Use24h)}";
         DateTime from = prevAt, to = at;
         // Ramadan: the header counts down to Iftar by day (the bar is the fast, Fajr to Maghrib) and to the end of Suhoor by night.
-        if (app.RamadanTarget(now) is { } r)
+        if (sch.RamadanTarget(now) is { } r)
         {
             bool iftar = r.at == today[Prayer.Maghrib];
             int rd = Ramadan.Day(DateOnly.FromDateTime(r.at), st.HijriAdjust);
@@ -293,7 +352,7 @@ sealed class PrayerCard : Form
         // ---- Date navigator: ‹ date (click for calendar) › ----
         var day = Viewing;
         bool isToday = viewDate == null;
-        var dayTimes = isToday ? today : app.TimesFor(day);
+        var dayTimes = isToday ? today : sch.TimesFor(day);
         var dayDt = day.ToDateTime(new TimeOnly(12, 0));
         using var fArrow = new Font(Art.IconFontName, 11f);
         rPrev = Box(10, 198, 32, 44);
@@ -367,7 +426,7 @@ sealed class PrayerCard : Form
         // Qiyam al-Layl after Isha: a voluntary prayer, so it is never the next prayer and has no reminder.
         // Its time is the start of the night's last third, the best part of it.
         {
-            var qt = app.NightAfter(day).LastThird;
+            var qt = sch.NightAfter(day).LastThird;
             float rh = RowH;
             Art.QiyamGlyph(g, Box(24, y + rh / 2 - 10, 20, 20), dark, false, dim);
             if (st.ShowSunnah)
@@ -384,9 +443,9 @@ sealed class PrayerCard : Form
         rInfo = Rectangle.Empty;
         if (st.ShowNightTimes)
         {
-            var night = app.NightAfter(day);
+            var night = sch.NightAfter(day);
             string a = L.F("Midnight", L.Time(night.Midnight, st.Use24h)), b = L.F("LastThird", L.Time(night.LastThird, st.Use24h));
-            var (dayLen, nightLen) = app.DayAndNight(day);
+            var (dayLen, nightLen) = sch.DayAndNight(day);
             string c = L.F("DayLength", L.Span(dayLen)), d = L.F("NightLength", L.Span(nightLen));
             var mf = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine;
             int M(string s) => TextRenderer.MeasureText(g, s, fTiny, Size.Empty, mf).Width;

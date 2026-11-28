@@ -14,6 +14,14 @@ public sealed class AppSettings
     public string LocationName { get; set; } = "Cairo, Egypt";
     public DateTime LocationUpdatedUtc { get; set; }
 
+    /// <summary>
+    /// Other cities to look at on the card. The location above stays the default: the widget, the hover card and
+    /// every reminder follow it, whichever city the card shows.
+    /// </summary>
+    public List<SavedCity> Cities { get; set; } = [];
+    /// <summary>The city the card shows: -1 for the default, otherwise an index into <see cref="Cities"/>.</summary>
+    public int ActiveCity { get; set; } = -1;
+
     public string Method { get; set; } = "Egyptian";
     public bool HanafiAsr { get; set; }
     public bool Use24h { get; set; }
@@ -105,5 +113,17 @@ public sealed class AppSettings
                 a.DeleteValue(RunName, false);
             }
         }
+    }
+}
+
+/// <summary>A saved city: its name, coordinates and IANA time zone (from the city search).</summary>
+public sealed record SavedCity(string Name, double Latitude, double Longitude, string TimeZone)
+{
+    /// <summary>The city's time zone, or this computer's if Windows doesn't know the id.</summary>
+    public static TimeZoneInfo ZoneOf(string id)
+    {
+        if (!string.IsNullOrEmpty(id) && TimeZoneInfo.TryFindSystemTimeZoneById(id, out var tz)) return tz;
+        Services.Log.Error(new TimeZoneNotFoundException($"Unknown time zone '{id}', using this computer's"));
+        return TimeZoneInfo.Local;
     }
 }

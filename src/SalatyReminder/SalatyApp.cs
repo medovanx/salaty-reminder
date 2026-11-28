@@ -9,7 +9,6 @@ sealed class SalatyApp : ApplicationContext
     public AppSettings S { get; private set; }
     public Icon AppIcon { get; }
     public DayTimes? Today { get; private set; }
-    DayTimes? tomorrow;
 
     const string AdhanResource = "adhan.ogg";
     public static bool HasBundledAdhan => typeof(SalatyApp).Assembly.GetManifestResourceInfo(AdhanResource) != null;
@@ -60,6 +59,7 @@ sealed class SalatyApp : ApplicationContext
         S = settings ?? AppSettings.Load();
         L.Ar = S.Language == "ar";
         AppIcon = LoadIcon();
+        Home = new Schedule(() => S, null);
 
         host = new HostWindow(this);
         hoverCard = new HoverCard(this);
@@ -132,7 +132,6 @@ sealed class SalatyApp : ApplicationContext
         if (Today?.Date != date) fired.Clear();
         var m = Methods.Get(S.Method);
         Today = PrayerCalc.Compute(date, S.Latitude, S.Longitude, m, S.HanafiAsr);
-        tomorrow = PrayerCalc.Compute(date.AddDays(1), S.Latitude, S.Longitude, m, S.HanafiAsr);
         UpdateWidget(Clock.Now);
         if (card?.Visible == true) card.Invalidate();
     }
@@ -149,70 +148,37 @@ sealed class SalatyApp : ApplicationContext
     /// <summary>Duha starts about a quarter of an hour after sunrise, once the sun has risen a spear's length.</summary>
     public const int DuhaMinutes = 15;
 
-    /// <summary>Next of the five prayers (sunrise excluded); after Isha this is tomorrow's Fajr.</summary>
-    public (Prayer prayer, DateTime at) GetNext(DateTime now)
-    {
-        foreach (var p in PrayerCalc.FivePrayers)
-            if (Today![p] > now) return (p, Today[p]);
-        return (Prayer.Fajr, tomorrow![Prayer.Fajr]);
-    }
+    /// <summary>The default city: the widget, the hover card and every reminder follow it.</summary>
+    public Schedule Home { get; }
+    readonly Dictionary<SavedCity, Schedule> cityTimes = [];
 
-    /// <summary>
-    /// What the widget, the card and the hover card point to next: from Fajr until Duha starts that is Duha
-    /// (shown on the Sunrise row, whose line describes it), otherwise the next of the five prayers.
-    /// </summary>
-    public (Prayer row, DateTime at, string name) GetNextShown(DateTime now)
+    /// <summary>The city the card shows: the default, or the saved city picked from the card's city list.</summary>
+    public Schedule Shown
     {
-        var duha = Today![Prayer.Sunrise].AddMinutes(DuhaMinutes);
-        if (now >= Today[Prayer.Fajr] && now < duha) return (Prayer.Sunrise, duha, L.T("Duha"));
-        var (p, at) = GetNext(now);
-        return (p, at, L.PrayerName(p, at));
-    }
-
-    public DayTimes TimesFor(DateOnly date) =>
-        PrayerCalc.Compute(date, S.Latitude, S.Longitude, Methods.Get(S.Method), S.HanafiAsr);
-
-    /// <summary>The most recent of the five prayers; before Fajr this is (approximately) yesterday's Isha.</summary>
-    public (Prayer prayer, DateTime at) GetPrevious(DateTime now)
-    {
-        for (int i = PrayerCalc.FivePrayers.Length - 1; i >= 0; i--)
+        get
         {
-            var p = PrayerCalc.FivePrayers[i];
-            if (Today![p] <= now) return (p, Today[p]);
+            int i = S.ActiveCity;
+            if (i < 0 || i >= S.Cities.Count) return Home;
+            var c = S.Cities[i];
+            if (!cityTimes.TryGetValue(c, out var sch)) cityTimes[c] = sch = new Schedule(() => S, c);
+            return sch;
         }
-        return (Prayer.Isha, Today![Prayer.Isha].AddDays(-1));
     }
 
-    /// <summary>
-    /// In Ramadan (with Ramadan mode on): by day the countdown to Iftar, after Isha and before Fajr the countdown
-    /// to the end of Suhoor at Fajr. Null at other times, between Maghrib and Isha, and outside Ramadan.
-    /// </summary>
-    public (string label, DateTime at)? RamadanTarget(DateTime now)
+    /// <summary>Shows city <paramref name="index"/> on the card (-1 for the default) and remembers it.</summary>
+    public void ShowCity(int index)
     {
-        if (!S.RamadanMode || Today == null || tomorrow == null) return null;
-        var date = DateOnly.FromDateTime(now);
-        bool today = Ramadan.IsRamadan(date, S.HijriAdjust);
-        if (today && now < Today[Prayer.Fajr]) return (L.T("SuhoorEnds"), Today[Prayer.Fajr]);
-        if (today && now < Today[Prayer.Maghrib]) return (L.T("Iftar"), Today[Prayer.Maghrib]);
-        if (now >= Today[Prayer.Isha] && Ramadan.IsRamadan(date.AddDays(1), S.HijriAdjust)) return (L.T("SuhoorEnds"), tomorrow[Prayer.Fajr]);
-        return null;
+        S.ActiveCity = index >= 0 && index < S.Cities.Count ? index : -1;
+        if (!Headless) S.Save();
+        card?.Invalidate();
     }
 
-    /// <summary>The middle and the last third of the night that follows <paramref name="date"/>'s Maghrib.</summary>
-    public NightTimes NightAfter(DateOnly date)
-    {
-        var day = Today?.Date == date ? Today : TimesFor(date);
-        var next = Today?.Date == date && tomorrow != null ? tomorrow : TimesFor(date.AddDays(1));
-        return NightTimes.Between(day[Prayer.Maghrib], next[Prayer.Fajr]);
-    }
-
-    /// <summary>The day from Fajr to Maghrib and the night from Maghrib to the next Fajr, as the fiqh counts them.</summary>
-    public (TimeSpan Day, TimeSpan Night) DayAndNight(DateOnly date)
-    {
-        var day = Today?.Date == date ? Today : TimesFor(date);
-        var next = Today?.Date == date && tomorrow != null ? tomorrow : TimesFor(date.AddDays(1));
-        return (day[Prayer.Maghrib] - day[Prayer.Fajr], next[Prayer.Fajr] - day[Prayer.Maghrib]);
-    }
+    public (Prayer prayer, DateTime at) GetNext(DateTime now) => Home.GetNext(now);
+    public (Prayer row, DateTime at, string name) GetNextShown(DateTime now) => Home.GetNextShown(now);
+    public (Prayer prayer, DateTime at) GetPrevious(DateTime now) => Home.GetPrevious(now);
+    public (string label, DateTime at)? RamadanTarget(DateTime now) => Home.RamadanTarget(now);
+    public NightTimes NightAfter(DateOnly date) => Home.NightAfter(date);
+    public (TimeSpan Day, TimeSpan Night) DayAndNight(DateOnly date) => Home.DayAndNight(date);
 
     void UpdateWidget(DateTime now)
     {
@@ -353,17 +319,21 @@ sealed class SalatyApp : ApplicationContext
         card.ShowNear(anchor);
     }
 
-    public void ShowSettings()
+    public void ShowSettings(int page = 0)
     {
-        if (settingsForm is { IsDisposed: false }) { settingsForm.Activate(); return; }
-        settingsForm = new SettingsForm(this);
-        settingsForm.Show();
+        if (settingsForm is not { IsDisposed: false })
+        {
+            settingsForm = new SettingsForm(this);
+            settingsForm.Show();
+        }
+        if (page > 0) settingsForm.ShowPageForShot(page);
         settingsForm.Activate();
     }
 
     public void ApplySettings(AppSettings s, bool relocate)
     {
         S = s;
+        if (S.ActiveCity >= S.Cities.Count) S.ActiveCity = -1;
         widget.SetPlacement(S.WidgetSide == "Left", S.WidgetOffset);
         L.Ar = S.Language == "ar";
         S.Save();
@@ -538,7 +508,7 @@ sealed class SalatyApp : ApplicationContext
         m.Items.Add(lang);
 
         m.Items.Add(new ToolStripSeparator());
-        m.Items.Add(Item(L.T("Settings"), Art.IconSettings, ShowSettings));
+        m.Items.Add(Item(L.T("Settings"), Art.IconSettings, () => ShowSettings()));
         // While an update is checked for or installed, the item says how far it is instead (the widget shows a bar too).
         if (UpdateBusy) m.Items.Add(new ToolStripMenuItem(UpdateStatus) { Enabled = false, Tag = new ThemedMenuRenderer.MenuGlyph("") });
         else m.Items.Add(Item(L.T("CheckForUpdates"), "", async () =>

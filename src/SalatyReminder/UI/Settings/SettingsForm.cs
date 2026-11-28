@@ -6,6 +6,9 @@ namespace SalatyReminder.UI.Settings;
 /// <summary>Settings in the Windows 11 Settings style: a sidebar of pages, each a rounded card.</summary>
 sealed class SettingsForm : Form
 {
+    /// <summary>The page the card's "Manage cities" opens.</summary>
+    public const int CitiesPage = 2;
+
     readonly SalatyApp app;
     readonly AppSettings s;
     readonly Theme t = Theme.Current;
@@ -21,6 +24,14 @@ sealed class SettingsForm : Form
     readonly ThemedCombo cmbResults = Combo(400);
     readonly ThemedNumber numLat = Num(-90, 90, 4), numLon = Num(-180, 180, 4);
     readonly Panel manualPanel = new() { AutoSize = true, Margin = Padding.Empty };
+    // My cities
+    readonly ThemedText txtCitySearch = new() { Width = 300 };
+    readonly ThemedButton btnCitySearch = new() { AutoSize = true, Height = 27 }, btnAddCity = new() { AutoSize = true, Height = 27 };
+    readonly ThemedCombo cmbCityResults = Combo(300);
+    readonly FlowLayoutPanel citiesPanel = new() { FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true, Margin = Padding.Empty };
+    readonly Label lblNoCities = new() { AutoSize = true, MaximumSize = new Size(490, 0), Tag = "dim", Margin = new Padding(0, 0, 0, 6) };
+    List<LocResult> cityResults = [];
+    Control? cityResultsRow;
     // Calculation
     readonly ThemedCombo cmbMethod = Combo(300), cmbAsr = Combo(300);
     readonly ThemedNumber numHijri = Num(-2, 2, 0);
@@ -66,6 +77,7 @@ sealed class SettingsForm : Form
 
         BuildGeneral();
         BuildLocation();
+        BuildCities();
         BuildCalculation();
         BuildReminders();
         BuildExtras();
@@ -183,6 +195,75 @@ sealed class SettingsForm : Form
             numLat.Value = (decimal)Math.Round(r.Lat, 4);
             numLon.Value = (decimal)Math.Round(r.Lon, 4);
         };
+    }
+
+    void BuildCities()
+    {
+        btnCitySearch.Text = L.T("Search");
+        btnAddCity.Text = L.T("AddCity");
+        txtCitySearch.PlaceholderText = L.T("City") + "…";
+        lblNoCities.Text = L.T("NoCities");
+        var note = new Label { Text = L.T("CitiesNote"), AutoSize = true, MaximumSize = new Size(490, 0), Tag = "dim", Margin = new Padding(0, 6, 0, 4) };
+        cityResultsRow = Flow(cmbCityResults, btnAddCity);
+        cityResultsRow.Visible = false;
+        FillCities();
+        AddPage("", L.T("MyCities"), Card(L.T("MyCities"), "",
+            lblNoCities, citiesPanel, Flow(txtCitySearch, btnCitySearch), cityResultsRow, note));
+
+        btnCitySearch.Click += async (_, _) => await SearchCitiesAsync();
+        txtCitySearch.KeyDown += async (_, e) => { if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; await SearchCitiesAsync(); } };
+        btnAddCity.Click += (_, _) =>
+        {
+            int i = cmbCityResults.SelectedIndex;
+            if (i < 0 || i >= cityResults.Count) return;
+            var r = cityResults[i];
+            // Nearby duplicates (the same city picked twice) are skipped.
+            if (!s.Cities.Any(c => Math.Abs(c.Latitude - r.Lat) < 0.01 && Math.Abs(c.Longitude - r.Lon) < 0.01))
+                s.Cities.Add(new SavedCity(r.Name, r.Lat, r.Lon, r.TimeZone));
+            cityResultsRow.Visible = false;
+            txtCitySearch.Text = "";
+            FillCities();
+        };
+    }
+
+    /// <summary>One row per saved city, each with a Remove button.</summary>
+    void FillCities()
+    {
+        citiesPanel.SuspendLayout();
+        foreach (Control c in citiesPanel.Controls.Cast<Control>().ToArray()) c.Dispose();
+        for (int i = 0; i < s.Cities.Count; i++)
+        {
+            int index = i;
+            var remove = new ThemedButton { Text = L.T("Remove"), AutoSize = true, Height = 27 };
+            remove.Click += (_, _) =>
+            {
+                s.Cities.RemoveAt(index);
+                // The card keeps showing the same city, or goes back to the default if that one was removed.
+                s.ActiveCity = s.ActiveCity == index ? -1 : s.ActiveCity > index ? s.ActiveCity - 1 : s.ActiveCity;
+                BeginInvoke(FillCities); // not while this button's own click is running
+            };
+            var row = Row(s.Cities[i].Name, remove);
+            Styler.Apply(row, t);
+            citiesPanel.Controls.Add(row);
+        }
+        citiesPanel.ResumeLayout();
+        lblNoCities.Visible = s.Cities.Count == 0;
+    }
+
+    async Task SearchCitiesAsync()
+    {
+        if (string.IsNullOrWhiteSpace(txtCitySearch.Text)) return;
+        btnCitySearch.Text = L.T("Searching");
+        btnCitySearch.Busy = true;
+        try { cityResults = await LocationService.SearchAsync(txtCitySearch.Text.Trim(), cmbLang.SelectedIndex == 1 ? "ar" : "en"); }
+        finally { btnCitySearch.Busy = false; btnCitySearch.Text = L.T("Search"); }
+        cmbCityResults.Items.Clear();
+        cityResultsRow!.Visible = true;
+        btnAddCity.Enabled = cityResults.Count > 0;
+        if (cityResults.Count == 0) { cmbCityResults.Items.Add(L.T("NoResults")); cmbCityResults.SelectedIndex = 0; return; }
+        foreach (var r in cityResults) cmbCityResults.Items.Add(r.Name);
+        cmbCityResults.SelectedIndex = 0;
+        cmbCityResults.DroppedDown = cityResults.Count > 1;
     }
 
     void BuildCalculation()
